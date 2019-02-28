@@ -1,0 +1,81 @@
+<html>
+	<head>
+		<link rel="stylesheet" type="text/css" href="./css/default.css">
+		<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+		<script type="text/javascript" src="./js/jcanvas.min.js"></script>
+		<script type="text/javascript" src="./js/jquery.canvasjs.min.js"></script>
+		<script type="text/javascript" src="./js/layout.js"></script>
+		<script type="text/javascript" src="./js/ao.js"></script>
+		<script type="text/javascript" src="./js/actor.js"></script>
+		<script type="text/javascript" src="./js/models.js"></script>
+		<script type="text/javascript" src="./js/worker.js"></script>
+		<script type="text/javascript" src="./js/person.js"></script>
+		<script type="text/javascript" src="./js/common-resource.js"></script>
+
+		<script type="text/javascript" src="./js/blackhole.js"></script>
+		<script type="text/javascript">
+			$(document).ready(function() {
+				var currentModel = 0
+				var container = $('#simulation')
+				var models = [
+				new Engine(container, new BlackholeModel("Black hole")),
+                new Engine(container, new DynamicCollaborationModel("Robots, 1c, noswitch", 30, 5).//
+				  	updateTopicOpts({requiredWorkers:6}).//
+				  	updateWorkersOpts({retention:900, maxCompulsoryTopics:1, fatigueSimulation:false})),
+			  	new Engine(container, new DynamicCollaborationModel("Humans, 1c, noswitch", 30, 5).//
+				  	updateTopicOpts({requiredWorkers:6}).//
+				  	updateWorkersOpts({retention:900, maxCompulsoryTopics:1, fatigueSimulation:true}).//
+				  	updateWorkerTopics((t, i) => t.interest=(5-i)/5)),
+			  	new Engine(container, new DynamicCollaborationModel("Humans, 1c, sync. switch", 30, 5).//
+				  	updateTopicOpts({requiredWorkers:6}).//
+				  	updateWorkersOpts({retention:20, maxCompulsoryTopics:1, fatigueSimulation:true}).//
+				  	updateWorkerTopics((t, i) => t.interest=(5-i)/5)),
+
+			  	new Engine(container, new DynamicCollaborationModel("Humans, 1c, queued switchover", 30, 5).//
+				  	updateTopicOpts({requiredWorkers:6}).//
+				  	updateWorkersOpts({retention:20, maxCompulsoryTopics:1, fatigueSimulation:true, synchronosSwitchover:false}).//
+				  	updateWorkerTopics((t, i) => t.interest=(5-i)/5)),
+			  	new Engine(container, new DynamicCollaborationModel("Humans, 1c, 1opt, sync. switch", 30, 5).//
+				  	updateTopicOpts({requiredWorkers:6}).//
+				  	updateWorkersOpts({retention:20, maxCompulsoryTopics:1, fatigueSimulation:true, maxOptionalTopics:1}).//
+				  	updateWorkerTopics((t, i) => t.interest=(5-i)/5)),
+			  	new Engine(container, new DynamicCollaborationModel("Humans, 1c, 1opt, queued switchover", 30, 5).//
+				  	updateTopicOpts({requiredWorkers:6}).//
+				  	updateWorkersOpts({retention:20, maxCompulsoryTopics:1, fatigueSimulation:true, maxOptionalTopics:1, synchronosSwitchover:false}).//
+				  	updateWorkerTopics((t, i) => t.interest=(5-i)/5)),
+			  	 
+			  	new Engine(container, new DynamicCollaborationModel("Change jobs, random motivation", 30, 5).//
+				  	updateTopicOpts({requiredWorkers:6}).//
+				  	updateWorkersOpts({retention:20, maxCompulsoryTopics:1, fatigueSimulation:true}).//
+				  	updateWorkerTopics((t) => t.interest=Math.random())),
+				  	
+			  	new Engine(container, new SimpleTaxModel("Simple Tax 30", 30))
+              	]
+				models.forEach((e, i) => {
+					e.stop()
+    				$('#modelSelector').append($('<option>', {
+    				    value: i,
+    				    text: e.getModel().getTitle()
+    				}))
+              	})
+              	
+              	$('#modelSelector').change(function() {
+              		models[currentModel].stop()
+              		models[currentModel = $(this).val()].start().pause()
+              	})
+              	$('#modelSelector').val(0)
+            
+             	models[0].start().pause()
+			});
+		</script>
+	</head>
+	<body>
+		<div id="control">
+			<span>Model</span>
+			<select id="modelSelector"></select>
+		</div>
+		<div id="simulation">
+			
+		</div>
+	</body>
+</html>

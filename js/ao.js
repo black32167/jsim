@@ -74,33 +74,48 @@ class Engine {
 				for(var midx = 0; midx < actorHistory[0].length; midx++) {
 					var chartTitle = this.model.getStateHeaders(i)[midx]
 					var chartOptions = {
-						animationEnabled: false,
-						title:{
-							text: chartTitle
-						},
-						legend:{
-							cursor: "pointer",
-							fontSize: 8,
-							
-						},
-						toolTip:{
-							shared: true
-						},
-						data:[{
-							name: chartTitle,
-							type: "line",
-							dataPoints: []
-						}]
-					}
+	             	    type: 'line',
+	             	   	
+	             	    data: {
+	             	        labels: [],
+	             	        datasets: [{
+	             	            label: chartTitle,
+	             	            data: [],
+	             	            backgroundColor: [],
+	             	            borderColor: [],
+	             	            fill: false,
+	             	            borderColor:'rgba(255, 0, 0, 1)',
+	             	            lineTension:0,
+	             	            pointRadius:0,
+	             	            borderWidth: 3
+	             	        }]
+	             	    },
+	             	    options: {
+	             	    	animation: {
+	             	            duration: 0, // general animation time
+	             	        },
+	             	        hover: {
+	             	            animationDuration: 0, // duration of animations when hovering an item
+	             	        },
+	             	        responsiveAnimationDuration: 0,
+	             	        scales: {
+	             	            yAxes: [{
+	             	                ticks: {
+	             	                    beginAtZero:true
+	             	                }
+	             	            }]
+	             	        }
+	             	    }
+	             	}
 					chartOptionsArray.push(chartOptions)
 				}
 				
 				this.historyContainer.empty()
 				chartOptionsArray.forEach((chartOptions) => {
 					var id = Math.floor((1 + Math.random()) * 10000)
-					var chartDiv = $('<div id="chart' + id + '" class="chart" style="height:200px">')
+					var chartDiv = $('<canvas id="chart' + id + '" class="chart" style="height:200px">')
 					this.historyContainer.append(chartDiv)
-					var chart = new CanvasJS.Chart('chart' + id, chartOptions)
+					var chart = new Chart('chart' + id, chartOptions)
 					
 					this.charts.push(chart)
 					chart.render();
@@ -115,10 +130,18 @@ class Engine {
 			actorHistory.forEach((e, midx) => {
 				e.forEach((e1,didx) => {
 					if(this.charts[didx] != undefined) {
-						var dpoints = this.charts[didx].options.data[0].dataPoints
-						if(midx > dpoints.length-1) {
-							dpoints.push({y:e1})
+						var chart = this.charts[didx]
+						var data = chart.data
+						
+						var ds = data.datasets[0]
+				
+						if(midx > data.labels.length-1) {
+			             	data.labels.push(data.labels.length)
+			    			ds.data.push(e1)
+			    			//ds.backgroundColor.push('rgba(255, 99, 132, 0.2)')
+			    			chart.update()
 						}
+
 					}
 				})
 			});

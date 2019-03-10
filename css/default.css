@@ -41,11 +41,15 @@ canvas {
 	display: inline-block;
 	border-right:2px solid black;
 }
-.model-description {
+.right-panel {
 	vertical-align:top;
 	display: inline-block;
 	width:40%;
 	margin:10px;
+}
+.model-description {
+	
+	margin-bottom:10px;
 }
 .visualization {
 

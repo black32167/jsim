@@ -32,6 +32,15 @@ class Engine {
 		$(this.c).click( e => {
 			this.togglePause()
 		})
+		var startStop = substructure.find('.startStop')
+		startStop.click( e => {
+			if(this.togglePause()) {
+				startStop.text('Stop')
+			} else {
+				startStop.text('Start')
+			}
+		})
+		
 	}
 	getModel() {
 		return this.model
@@ -153,7 +162,7 @@ class Engine {
 	}
 	togglePause() {
 		this.progressEnabled = !this.progressEnabled
-		return this
+		return this.progressEnabled
 	}
 	pause() {
 		this.progressEnabled = false
@@ -167,6 +176,11 @@ class Engine {
     	
 		requestAnimationFrame(() => {this.draw()})
 		this.interval = setInterval(() => {this.tick()}, this.tickDelay)
+		
+		this.tick()
+		var agentId = this.model.getAllAgents()[0].id
+		this.showActorInfo(agentId)
+
 		return this
     }
     

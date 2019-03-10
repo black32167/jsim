@@ -145,7 +145,7 @@ class WorkerBehavior extends ActorBehavior {
 			
 			if(this.retentionTicks == 0) {
 				this.priority = tIdx
-				console.log("priority = " + this.priority + ", idx = " + this.idx)
+				//console.log("priority = " + this.priority + ", idx = " + this.idx)
 			}
 			if(this.retentionTicks > this.retention) {
 				this.retentionTicks = 0
@@ -311,7 +311,7 @@ class TopicBehavior extends ActorBehavior {
 class DynamicCollaborationModel extends Model {
 	constructor(title, wN, tN) {
 		super(title)
-		
+
 		var layout = new WorkerLayout()
 	
 		var topics = []
@@ -335,6 +335,12 @@ class DynamicCollaborationModel extends Model {
 		this.layout = layout
 		this.allAgents = this.workers.concat(this.topics)
 	}
+	
+	
+	getDescription() {
+		return this.description
+	}
+	
 	draw(c) {
 		this.layout.arrange(c)
 		this.layout.draw(c)
@@ -375,6 +381,10 @@ class DynamicCollaborationModel extends Model {
 		
 	}
 	
+	description(desc) {
+		this.description = desc
+		return this
+	}
 	updateTopicOpts(opts) {
 		this.topics.forEach(t => t.updateOpts(opts))
 		return this

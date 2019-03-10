@@ -44,7 +44,9 @@ class Model {
 		})
 		return state
 	}
-
+	getDescription() {
+		return "Model Description"
+	}
 	
 	getAgentIdAt(x, y) {
 		var allAgents = this.getAllAgents()

@@ -26,6 +26,7 @@ class BlackholeModel extends Model {
 		})
 		
 		var shift=0
+		// Packing particles array
 		releasedIdxs.forEach(idx => {
 			var st = idx-(shift++)
 			for(var i = st+1; i < this.particles.length; i++) {
@@ -34,7 +35,9 @@ class BlackholeModel extends Model {
 			this.particles.pop()
 		})
 		
+		
 		if(this.bh.detained < 10) {
+			// Detain till produce new particles till amount of detained is below threshold
 			if(tIdx % 10 == 0) {
 				var p = new ParticleActor(this.agentsCounter++, this.bh)
 				p.setPos(this.width/2, this.height/2-15)
@@ -42,9 +45,9 @@ class BlackholeModel extends Model {
 				this.bh.newParticle()
 			}
 		} else {
+			// Put work into technical debt reduction
 			this.bh.mass -= 0.06*this.bh.detained
 		}
-		
 	}
 	
 	getAllAgents() {
@@ -60,7 +63,21 @@ class BlackholeModel extends Model {
 		this.height = c.height()
 		this.bh.setPos(this.width/2, this.height/2)
 	}
-	
+	getDescription() {
+		return "The 'blackhole' model of the <i>technical debt</i> accumulation. " +
+				"<br><br>" +
+				"While software developers release 'features' of the product, " +
+				"some amount of technical debt is produced as well. " +
+				"Technical debt acts like a mass attracting features making further functional implementation harder. " +
+				"When number of inflight features reaches <i>ten</i> (i.e. features are struggle getting through release), " +
+				"developers start invesing into the technical debt reduction. It helps but we see that inflight features already lost part of" +
+				"their impulse because fighting with big technical debt decreases developers motivation and requirements for features " +
+				"are changing over time. " +
+				"<br><br>" +
+				"Once releases start happening, debt reduction stops and all efforts are switched to features again." +
+				"In this a simulation we can see that there is a period when releasing rate is increasing exponentially but then " +
+				"speed drops notably. "
+	}
 	draw(c) {
 		this.particles.forEach(p => p.getActorShape().draw(c))
 		this.bh.getActorShape().draw(c)

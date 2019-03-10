@@ -3,33 +3,28 @@ Math.round10 = function (a) {
 }
 class Engine {
     constructor(parent, model) {
-
-		this.c = $('<canvas class="mainCanvas" width="300" height="300">')
+    	var substructure = $('#simulation-structure').clone()
+    	parent.append(substructure)
+    	substructure.show()
+    	this.modelContainer = substructure
+    	
+    	// Visualization
+		this.c = substructure.find('.mainCanvas')
+		this.infoContainer = substructure.find('.info')
+		
+		// Graphs
+		this.historyContainer = substructure.find('.graphs')
+		this.descriptionContainer = substructure.find('.model-description')
 		this.model = model
 		this.tickDelay = 100
-	
+
 		this.history = {}
 		this.startTime = Date.now()
-		this.infoContainer = $('<div class="info">')
 		
-		this.historyContainer = $('<div class="scroll history" style="height:600px;width:600px;"></div>')
 		this.progressEnabled = true
 		this.tickNo = 0
 		this.selectedActor = null
 		this.active = false
-		
-		this.modelContainer = $('<div class="model">')
-		parent.append(this.modelContainer)
-		
-		var leftPanel = $('<div style="float:left">')
-		leftPanel.append(this.c)
-		leftPanel.append(this.infoContainer)
-		
-		this.modelContainer.append(leftPanel)
-		var historyCC = $('<div>')
-		historyCC.append(this.historyContainer)
-		this.modelContainer.append(historyCC)
-
 		
 		$(this.c).mousemove(e => {
 			this.trackMouse(e.offsetX, e.offsetY)
@@ -47,7 +42,7 @@ class Engine {
 		var agentId = this.model.getAgentIdAt(x,y)
 		if(agentId != undefined) {
 			this.showActorInfo(agentId)
-		}
+		} 
 	}
 	
 	showActorInfo(i) {
@@ -113,7 +108,7 @@ class Engine {
 				this.historyContainer.empty()
 				chartOptionsArray.forEach((chartOptions) => {
 					var id = Math.floor((1 + Math.random()) * 10000)
-					var chartDiv = $('<canvas id="chart' + id + '" class="chart" style="height:200px">')
+					var chartDiv = $('<canvas id="chart' + id + '" height="200" class="chart">')
 					this.historyContainer.append(chartDiv)
 					var chart = new Chart('chart' + id, chartOptions)
 					
@@ -167,6 +162,7 @@ class Engine {
     start() {
     	this.active = true
     	this.modelContainer.show()
+    	this.descriptionContainer.html(this.model.getDescription())
     	this.model.prepare(this.c)//TODO: do we need this?
     	
 		requestAnimationFrame(() => {this.draw()})
@@ -194,7 +190,6 @@ class Engine {
 					fillStyle: 'black',
 					fromCenter: false,
 					x: 10, y: 10, text:'Paused'})
-			
 			}
 			this.model.draw(c)
 		}

@@ -70,12 +70,34 @@
 		</script>
 	</head>
 	<body>
-		<div id="control">
+		<div id="control" class="control">
 			<span>Model</span>
 			<select id="modelSelector"></select>
 		</div>
-		<div id="simulation">
+		<div id="simulation" class="simulation">
 			
 		</div>
+		
+		<div id="simulation-structure" style="display:none;">
+			<div class="simulation-process">
+				<div class="visualization">
+				
+					<canvas class="mainCanvas" width="300" height="300"></canvas>
+				
+					<div class="info"></div>
+				</div>
+			
+				<div>
+					<div class="graphs" class="scroll history" style="height:600px;width:100%;">
+					</div>
+				</div>
+			</div>
+			<div class="model-description">
+				TODO: description
+			</div>
+		</div>
+		
+
+		
 	</body>
 </html>

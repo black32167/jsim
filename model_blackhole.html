@@ -1,0 +1,26 @@
+<html>
+	<head>
+		<link rel="stylesheet" type="text/css" href="./css/default.css">
+		<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+		<script type="text/javascript" src="./js/thirdparty/jcanvas.min.js"></script>
+		<script type="text/javascript" src="./js/thirdparty/Chart.min.js"></script>
+		<script type="text/javascript" src="./js/layout.js"></script>
+		<script type="text/javascript" src="./js/ao.js"></script>
+		<script type="text/javascript" src="./js/actor.js"></script>
+		<script type="text/javascript" src="./js/common-resource.js"></script>
+		<script type="text/javascript" src="./js/models.js"></script>
+		<script type="text/javascript" src="./js/blackhole.js"></script>
+		<script type="text/javascript">
+			$(document).ready(function() {
+				var currentModel = 0
+				var container = $('#simulation')
+				var model = new Engine(container, new BlackholeModel("Black hole"))
+				model.start().pause()
+			});
+		</script>
+	</head>
+	<body>
+		<div class="top_controls"><a href="index.html">&lt;&lt;</a></div>
+		<div id="simulation"></div>
+	</body>
+</html>

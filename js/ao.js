@@ -2,8 +2,34 @@ Math.round10 = function (a) {
 	return Math.round(a*1000)/1000
 }
 class Engine {
+	
     constructor(parent, model) {
-    	var substructure = $('#simulation-structure').clone()
+    	
+    	var substructure = $(`
+			<div id="simulation-structure" style="display:none;">
+				<div class="simulation-process">
+					<div class="visualization">
+					
+						<canvas class="mainCanvas" width="300" height="300"></canvas>
+					
+						<div class="info"></div>
+						
+					</div>
+				
+					<div>
+						<div class="graphs" class="scroll history" style="height:600px;width:100%;">
+						</div>
+					</div>
+				</div>
+				<div class="right-panel">
+					<div class="model-description">
+						TODO: description
+					</div>
+					<div class="controls">
+						<div><a href="#" class="startStop">Start</a></div>
+					</div>
+				</div>
+			</div>`)
     	parent.append(substructure)
     	substructure.show()
     	this.modelContainer = substructure

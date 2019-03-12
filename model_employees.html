@@ -1,0 +1,91 @@
+<html>
+	<head>
+		<meta itemprop="image" content="image.png">
+		<meta name="description" content="Simulations of classic product development process issues.">
+		<link rel="stylesheet" type="text/css" href="./css/default.css">
+		<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+		<script type="text/javascript" src="./js/thirdparty/jcanvas.min.js"></script>
+		<script type="text/javascript" src="./js/thirdparty/Chart.min.js"></script>
+		<script type="text/javascript" src="./js/layout.js"></script>
+		<script type="text/javascript" src="./js/ao.js"></script>
+		<script type="text/javascript" src="./js/actor.js"></script>
+		<script type="text/javascript" src="./js/models.js"></script>
+		<script type="text/javascript" src="./js/worker.js"></script>
+		<script type="text/javascript" src="./js/person.js"></script>
+		<script type="text/javascript" src="./js/common-resource.js"></script>
+
+		<script type="text/javascript" src="./js/blackhole.js"></script>
+		<script type="text/javascript">
+			$(document).ready(function() {
+				var currentModel = 0
+				var container = $('#simulation')
+				var models = [
+				/*new Engine(container, new DynamicCollaborationModel("Robots, 1c, noswitch", 30, 5).//
+				  	updateTopicOpts({requiredWorkers:6}).//
+				  	updateWorkersOpts({retention:900, maxCompulsoryTopics:1, fatigueSimulation:false})),*/
+			  	new Engine(container, new DynamicCollaborationModel("Humans, 1c, noswitch", 30, 5).//
+			  		description("Number of employees work on some forcibly assigned topics permanently. ").//
+				  	updateTopicOpts({requiredWorkers:6}).//
+				  	updateWorkersOpts({retention:900, maxCompulsoryTopics:1, fatigueSimulation:true}).//
+				  	updateWorkerTopics((t, i) => t.interest=(5-i)/5)),
+			  	new Engine(container, new DynamicCollaborationModel("Humans, 1c, sync. switch", 30, 5).//
+		  			description("Number of employees work on some forcibly assigned topics with switch between topics periodically. ").//
+				  	updateTopicOpts({requiredWorkers:6}).//
+				  	updateWorkersOpts({retention:20, maxCompulsoryTopics:1, fatigueSimulation:true}).//
+				  	updateWorkerTopics((t, i) => t.interest=(5-i)/5)),
+
+			  	/*new Engine(container, new DynamicCollaborationModel("Humans, 1c, queued switchover", 30, 5).//
+				  	updateTopicOpts({requiredWorkers:6}).//
+				  	updateWorkersOpts({retention:20, maxCompulsoryTopics:1, fatigueSimulation:true, synchronosSwitchover:false}).//
+				  	updateWorkerTopics((t, i) => t.interest=(5-i)/5)),
+			  	new Engine(container, new DynamicCollaborationModel("Humans, 1c, 1opt, sync. switch", 30, 5).//
+				  	updateTopicOpts({requiredWorkers:6}).//
+				  	updateWorkersOpts({retention:20, maxCompulsoryTopics:1, fatigueSimulation:true, maxOptionalTopics:1}).//
+				  	updateWorkerTopics((t, i) => t.interest=(5-i)/5)),*/
+			  	new Engine(container, new DynamicCollaborationModel("Humans, 1c, 1opt, queued switchover", 30, 5).//
+		  			description(
+		  					"Number of employees work on some forcibly assigned topics with ability to share efforts with optinal interesting topic. "+
+		  					"From time to time employees are forced to switch between compulsory topics. ").//
+				  	updateTopicOpts({requiredWorkers:6}).//
+				  	updateWorkersOpts({retention:20, maxCompulsoryTopics:1, fatigueSimulation:true, maxOptionalTopics:1, synchronosSwitchover:false}).//
+				  	updateWorkerTopics((t, i) => t.interest=(5-i)/5))
+			  	 
+			  	/*new Engine(container, new DynamicCollaborationModel("Change jobs, random motivation", 30, 5).//
+		  			description(
+		  					"Number of employees work on some forcibly assigned topics with ability to share efforts with optinal interesting topic. "+
+		  					"From time to time employees are forced to switch between compulsory topics. ").//
+				  	updateTopicOpts({requiredWorkers:6}).//
+				  	updateWorkersOpts({retention:20, maxCompulsoryTopics:1, fatigueSimulation:true}).//
+				  	updateWorkerTopics((t) => t.interest=Math.random())),*/
+				  	
+			  	
+              	]
+				models.forEach((e, i) => {
+					e.stop()
+    				$('#modelSelector').append($('<option>', {
+    				    value: i,
+    				    text: e.getModel().getTitle()
+    				}))
+              	})
+              	
+              	$('#modelSelector').change(function() {
+              		models[currentModel].stop()
+              		models[currentModel = $(this).val()].start().pause()
+              	})
+              	$('#modelSelector').val(0)
+            
+             	models[0].start().pause()
+			});
+		</script>
+	</head>
+	<body>
+		<div class="top_controls">
+			<a href="index.html">&lt;&lt;</a>
+			|
+			<span>Model:</span>
+			<select id="modelSelector"></select>
+		</div>
+		
+		<div id="simulation" class="simulation"></div>
+	</body>
+</html>

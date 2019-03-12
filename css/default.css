@@ -1,5 +1,6 @@
 canvas {
 	border:1px solid gray;
+	border-radius: 5px;
 }
 .control {
 	margin-bottom:5px;
@@ -40,6 +41,7 @@ canvas {
 	width:50%;
 	display: inline-block;
 	border-right:2px solid black;
+	padding-right:5px;
 }
 .right-panel {
 	vertical-align:top;
@@ -53,4 +55,39 @@ canvas {
 }
 .visualization {
 
+}
+
+.middle_helper {
+	display: inline-block;
+    height: 100%;
+    vertical-align: middle;
+}
+.model_link {
+	width:120px;
+	height:100px;
+	text-align:center;
+	
+	vertical-align:middle;
+	float:left;
+	clear: left;
+	margin-right:10px;
+	margin-left:10px;
+	padding:20px 5px 5px 5px;
+	border:1px solid blue;
+	border-radius:5px;
+}
+.model_decription {
+	float:left;
+}
+.top_controls {
+	border-radius:5px;
+	margin-bottom:5px;
+	padding:5px;
+	background:blue;
+	color:white;
+}
+
+.top_controls a {
+	color:white;
+	text-decoration: none;
 }

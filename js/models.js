@@ -36,7 +36,9 @@ class Model {
 	getStateHeaders(agentId) {
 		return this.getAgent(agentId).stateHeaders()
 	}
-	
+	cleanStates() {
+		this.getAllAgents().forEach(a=>a.cleanState())
+	}
 	getStates() {
 		var state = {}
 		this.getAllAgents().forEach(a => {

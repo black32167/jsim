@@ -125,7 +125,9 @@ class WorkerBehavior extends ActorBehavior {
 		this.topics.forEach(t => stateValues.push(Math.round10(t.proficiency)))
 		return stateValues
 	}
-	
+	cleanState() {
+		this.motivation = 0.5
+	}
 	getActorShape() { return this.w }
 	
 	getInterestedTopics() {
@@ -293,6 +295,10 @@ class TopicBehavior extends ActorBehavior {
 	}
 	state() {
 		return [this.devSpeed, this.workers]
+	}
+	cleanState() {
+		this.devSpeed = 0
+		this.workers = 0
 	}
 	allTicksFinished() {
 		this.devSpeed = this.lastTickContribution

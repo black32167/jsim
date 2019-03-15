@@ -43,6 +43,7 @@ class Engine {
 		this.descriptionContainer = substructure.find('.model-description')
 		this.model = model
 		this.tickDelay = 100
+		this.MAX_TICK = 1000	
 
 		this.history = {}
 		this.startTime = Date.now()
@@ -58,13 +59,11 @@ class Engine {
 		$(this.c).click( e => {
 			this.togglePause()
 		})
-		var startStop = substructure.find('.startStop')
-		startStop.click( e => {
-			if(this.togglePause()) {
-				startStop.text('Stop')
-			} else {
-				startStop.text('Start')
-			}
+		
+		this.startStop = substructure.find('.startStop')
+		this.startStop.click( e => {
+	
+			this.togglePause()
 		})
 		
 	}
@@ -101,7 +100,7 @@ class Engine {
 			var chartOptionsArray = []
 			this.charts = []
 			if(actorHistory != undefined && actorHistory.length > 0) {
-				for(var midx = 0; midx < actorHistory[0].length; midx++) {
+				for(var midx = 0; midx < actorHistory[0].length; midx++) {// Iterate over metrices
 					var chartTitle = this.model.getStateHeaders(i)[midx]
 					var chartOptions = {
 	             	    type: 'line',
@@ -168,14 +167,12 @@ class Engine {
 						if(midx > data.labels.length-1) {
 			             	data.labels.push(data.labels.length)
 			    			ds.data.push(e1)
-			    			//ds.backgroundColor.push('rgba(255, 99, 132, 0.2)')
-			    			chart.update()
 						}
 
 					}
 				})
 			});
-			this.charts.forEach(c => c.render())
+			this.charts.forEach(c => c.update())
 		}
 		
 	}
@@ -188,6 +185,15 @@ class Engine {
 	}
 	togglePause() {
 		this.progressEnabled = !this.progressEnabled
+		if(this.progressEnabled) {
+//			if(this.tickNo >= this.MAX_TICK) {
+//				this.cleanHistory()
+//			}
+			this.startStop.text('Stop')
+		} else {
+			this.startStop.text('Start')
+		}
+
 		return this.progressEnabled
 	}
 	pause() {
@@ -238,20 +244,33 @@ class Engine {
 		}
 	}
 
+	cleanHistory() {
+		this.history = {}
+		this.tickNo = 1
+		this.showActorInfo(this.selectedActor)
+		this.model.cleanStates()
+	}
 	tick() {
-		if(this.progressEnabled) {
-			this.model.tick(this.tickNo)
 		
-			var statesMap = this.model.getStates()
+		if(this.progressEnabled) {
+			if(this.tickNo >= this.MAX_TICK) {
+				
+				this.pause()
+				
+			} else {
+				this.model.tick(this.tickNo)
 			
-			for(var id in statesMap) {
-				if(this.history[id] == undefined) {
-					this.history[id] = []
+				var statesMap = this.model.getStates()
+				
+				for(var id in statesMap) {
+					if(this.history[id] == undefined) {
+						this.history[id] = []
+					}
+					this.history[id].push(statesMap[id])
 				}
-				this.history[id].push(statesMap[id])
+				this.tickNo++
+				this.showActorInfo(this.selectedActor)
 			}
-			this.tickNo++
-			this.showActorInfo(this.selectedActor)
 		}
 	}
 }

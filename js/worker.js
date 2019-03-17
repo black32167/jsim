@@ -341,12 +341,7 @@ class DynamicCollaborationModel extends Model {
 		this.layout = layout
 		this.allAgents = this.workers.concat(this.topics)
 	}
-	
-	
-	getDescription() {
-		return this.description
-	}
-	
+
 	draw(c) {
 		this.layout.arrange(c)
 		this.layout.draw(c)
@@ -384,13 +379,8 @@ class DynamicCollaborationModel extends Model {
 		this.topics.forEach((b,i) => {
 			b.allTicksFinished()
 		})
-		
 	}
-	
-	description(desc) {
-		this.description = desc
-		return this
-	}
+
 	updateTopicOpts(opts) {
 		this.topics.forEach(t => t.updateOpts(opts))
 		return this

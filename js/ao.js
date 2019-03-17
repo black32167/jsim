@@ -1,6 +1,9 @@
 Math.round10 = function (a) {
 	return Math.round(a*1000)/1000
 }
+function color(color, text) {
+	return "<b><span style=\"color:"+color+";\">"+text+"</span></b>"
+}
 class Engine {
 	
     constructor(parent, model) {
@@ -230,7 +233,7 @@ class Engine {
 			c.drawText({
 					fillStyle: 'black',
 					fromCenter: false,
-					x: c.width()-60, y: 10, text:'Tick:'+this.tickNo})
+					x: c.width()-70, y: 10, text:'Tick:'+this.tickNo})
 			if(!this.progressEnabled) {
 				c.drawText({
 					fillStyle: 'black',

@@ -11,7 +11,6 @@
 		<script type="text/javascript" src="./js/actor.js"></script>
 		<script type="text/javascript" src="./js/models.js"></script>
 		<script type="text/javascript" src="./js/worker.js"></script>
-		<script type="text/javascript" src="./js/person.js"></script>
 		<script type="text/javascript" src="./js/common-resource.js"></script>
 
 		<script type="text/javascript" src="./js/blackhole.js"></script>
@@ -19,15 +18,12 @@
 			$(document).ready(function() {
 				var currentModel = 0
 				var container = $('#simulation')
-				var instructionText = "<br><br>Most interesting project is represented with light green circle,"+
-  				"while least interesting is dark brown. "+
+				var instructionText = "<br><br>Most interesting project is represented with "+color('rgba(100,255,0, 1)', "light green")+" circle,"+
+  				"while least interesting is "+color('rgba(100,0,0, 1)', "dark brown")+". "+
   				"Point cursor to project and see how development speed changes. " +
   				"Workers are modelled with blue dots. More saturated blue color dot has - more motivated current employee. " +
-  				"Point cursor to blue dot and see how employee motivation and skills change depending on what project one works. " 
+  				"Point cursor to the blue dot and see how employee motivation and skills change depending on what project one works. " 
 				var models = [
-				/*new Engine(container, new DynamicCollaborationModel("Robots, 1c, noswitch", 30, 5).//
-				  	updateTopicOpts({requiredWorkers:6}).//
-				  	updateWorkersOpts({retention:900, maxCompulsoryTopics:1, fatigueSimulation:false})),*/
 			  	new Engine(container, new DynamicCollaborationModel("Humans, 1c, noswitch", 30, 5).//
 			  		description(
 			  				"Number of employees work on some forcibly assigned topics permanently. "+
@@ -41,15 +37,6 @@
 				  	updateTopicOpts({requiredWorkers:6}).//
 				  	updateWorkersOpts({retention:20, maxCompulsoryTopics:1, fatigueSimulation:true}).//
 				  	updateWorkerTopics((t, i) => t.interest=(5-i)/5)),
-
-			  	/*new Engine(container, new DynamicCollaborationModel("Humans, 1c, queued switchover", 30, 5).//
-				  	updateTopicOpts({requiredWorkers:6}).//
-				  	updateWorkersOpts({retention:20, maxCompulsoryTopics:1, fatigueSimulation:true, synchronosSwitchover:false}).//
-				  	updateWorkerTopics((t, i) => t.interest=(5-i)/5)),
-			  	new Engine(container, new DynamicCollaborationModel("Humans, 1c, 1opt, sync. switch", 30, 5).//
-				  	updateTopicOpts({requiredWorkers:6}).//
-				  	updateWorkersOpts({retention:20, maxCompulsoryTopics:1, fatigueSimulation:true, maxOptionalTopics:1}).//
-				  	updateWorkerTopics((t, i) => t.interest=(5-i)/5)),*/
 			  	new Engine(container, new DynamicCollaborationModel("Humans, 1c, 1opt, queued switchover", 30, 5).//
 		  			description(
 		  					"Number of employees work on some forcibly assigned topics with ability to share efforts with optinal interesting topic. "+
@@ -58,16 +45,6 @@
 				  	updateTopicOpts({requiredWorkers:6}).//
 				  	updateWorkersOpts({retention:20, maxCompulsoryTopics:1, fatigueSimulation:true, maxOptionalTopics:1, synchronosSwitchover:false}).//
 				  	updateWorkerTopics((t, i) => t.interest=(5-i)/5))
-			  	 
-			  	/*new Engine(container, new DynamicCollaborationModel("Change jobs, random motivation", 30, 5).//
-		  			description(
-		  					"Number of employees work on some forcibly assigned topics with ability to share efforts with optinal interesting topic. "+
-		  					"From time to time employees are forced to switch between compulsory topics. ").//
-				  	updateTopicOpts({requiredWorkers:6}).//
-				  	updateWorkersOpts({retention:20, maxCompulsoryTopics:1, fatigueSimulation:true}).//
-				  	updateWorkerTopics((t) => t.interest=Math.random())),*/
-				  	
-			  	
               	]
 				models.forEach((e, i) => {
 					e.stop()

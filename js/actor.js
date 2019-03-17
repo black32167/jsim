@@ -25,7 +25,8 @@ class ActorShape {
 			  radius: this.r
 			});
 	}
-	
+	setStrokeColor(c) {this.stroke = c}
+
 	setColor(c) {this.color = c}
 	getColor() {return this.color}
 	

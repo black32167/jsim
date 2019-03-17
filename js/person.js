@@ -1,55 +1,74 @@
 class PersonBehavior extends ActorBehavior {
 	constructor(commonResource) {
 		super()
-		this.consRate = Math.random()
-		this.wasteRate = this.consRate*0.9//Math.random()//*this.consRate
-		this.prodRate = Math.random()
-		this.personalReserveRate=Math.random()
+		this.resetParameters()
 		this.commonResource = commonResource
-		this.privateReserve = 0
 		this.capacity = 5
 		this.maxCapacity = 10
+		this.resetParametersAfterTick = 100
+		this.tickNo = 0
 		this.p = new ActorShape()
+		this.useCommunityResource = false
+	}
+
+	resetParameters() {
+		this.wasteRate = Math.random()
+		this.consRate = this.wasteRate*1.1
+		this.prodRate = this.wasteRate+(this.wasteRate*(Math.random()-0.5)/2)
 	}
 	getActorShape() {
 		return this.p
 	}
 	meta() {
 		return [
-			["Consumption", Math.round10(this.consRate)],
-			["Irreversibly consumed", Math.round10(this.wasteRate)],
+			["Consumption", Math.round10(this.wasteRate)],
 			["Production", Math.round10(this.prodRate)]]
 	}
 	stateHeaders() {
-		return ['Capacity', 'Savings', 'Last Consumed', 'Last Wasted']
+		return ['Health']
 	}
 	state() {
-		return [Math.round10(this.capacity),
-		        Math.round10(this.privateReserve),
-		        Math.round10(this.lastConsumed),
-		        Math.round10(this.wasteRate)]
+		return [Math.round10(this.capacity)]
 	}
 	
 	tick() {
 		this.lastConsumed = 0
-		if(this.capacity > 0) {
-			if(this.capacity < this.maxCapacity) {
-				if (this.commonResource.reserve > this.consRate) {
-					this.commonResource.reserve -= this.consRate
-					this.lastConsumed = this.consRate
-				} else if(this.privateReserve > this.consRate) {
-					this.lastConsumed = this.consRate
-					this.privateReserve -= this.consRate
-				}
-				
-			}
 		
-			this.commonResource.reserve += (1-this.personalReserveRate)*this.prodRate
-			this.privateReserve += this.personalReserveRate*this.prodRate
+		if(this.capacity > 0) { // If alive
+			if(this.tickNo % this.resetParametersAfterTick == 0) {
+				this.resetParameters();
+			}
+			this.tickNo++
 			this.capacity -= this.wasteRate
 			
-			this.capacity += this.lastConsumed
-			this.p.setColor('rgba(0,0,255,' + (1 - Math.abs(this.capacity - this.maxCapacity)/this.maxCapacity)  + ')')
+			var producedResidue = this.prodRate
+			
+			var requiredAmount = Math.min(this.consRate, this.maxCapacity-this.capacity)
+			//var requiredAmount = this.maxCapacity-this.capacity
+			var internallyConsumed = Math.min(requiredAmount, producedResidue)
+			this.capacity += internallyConsumed
+			producedResidue -= internallyConsumed
+			requiredAmount -= internallyConsumed
+			
+			this.commonResource.addAmount(producedResidue)
+			
+			var externallyConsumed = Math.min(requiredAmount, this.commonResource.reserve)
+			
+			this.capacity += externallyConsumed
+			
+			this.commonResource.reserve -= externallyConsumed
+			
+			this.lastConsumed = internallyConsumed+externallyConsumed
+			
+			var energyRate = (1 - Math.abs(this.capacity - this.maxCapacity)/this.maxCapacity)
+			if(this.prodRate > this.wasteRate) {
+				this.p.setStrokeColor('blue')
+				this.p.setColor('rgba(0,0,255,' + energyRate + ')')
+			} else {
+				this.p.setStrokeColor('red')
+				this.p.setColor('rgba(255,0,0,' + energyRate + ')')
+			}
+			
 		}
 		
 	}
@@ -62,19 +81,23 @@ class SimpleTaxModel extends Model {
 
 		var layout = new CircularLayout()
 
-		var commonResourceActor = new ResourceBehavior(commonResourceActor)
+		this.commonResourceActor = new ResourceBehavior()
 
-		layout.setCentralElement(commonResourceActor)
+		layout.setCentralElement(this.commonResourceActor)
 		
 		this.allAgents = []
 		for(var i = 0; i < N; i++) {
-			var a = new PersonBehavior(commonResourceActor);
+			var a = new PersonBehavior(this.commonResourceActor);
 			this.allAgents.push(a)
 			layout.addRadialElement(a)
 		}
-		this.allAgents.push(commonResourceActor)
+		this.allAgents.push(this.commonResourceActor)
 
 		this.layout = layout
+	}
+	saveExcess() {
+		this.commonResourceActor.acceptResources = true
+		return this
 	}
 	
 	draw(c) {

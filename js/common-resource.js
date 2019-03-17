@@ -5,6 +5,8 @@ class ResourceBehavior extends ActorBehavior {
 		super()
 		this.r = new ActorShape()
 		this.reserve = 0
+		this.maxCapacity = 10
+		this.acceptResources = false
 	}
 	getActorShape() {
 		return this.r
@@ -15,11 +17,17 @@ class ResourceBehavior extends ActorBehavior {
 	stateHeaders() {
 		return ['Capacity']
 	}
+	addAmount(amount) {
+		if(this.acceptResources) {
+			var acceptedAmount = Math.min(amount, this.maxCapacity-this.reserve)
+			this.reserve += acceptedAmount
+		}
+	}
 	state() {
 		return [Math.round10(this.reserve)]
 	}
 	
 	tick() {
-		this.r.setColor('rgba(0,0,255,' + this.reserve  + ')')
+		this.r.setColor('rgba(0,0,255,' + this.reserve/this.maxCapacity  + ')')
 	}
 }

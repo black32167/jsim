@@ -1,6 +1,6 @@
+import { ActorBehavior, ActorShape } from './actor.js'
+export class ResourceBehavior extends ActorBehavior {
 
-class ResourceBehavior extends ActorBehavior {
-	
 	constructor() {
 		super()
 		this.r = new ActorShape()
@@ -18,16 +18,16 @@ class ResourceBehavior extends ActorBehavior {
 		return ['Capacity']
 	}
 	addAmount(amount) {
-		if(this.acceptResources) {
-			var acceptedAmount = Math.min(amount, this.maxCapacity-this.reserve)
+		if (this.acceptResources) {
+			var acceptedAmount = Math.min(amount, this.maxCapacity - this.reserve)
 			this.reserve += acceptedAmount
 		}
 	}
 	state() {
 		return [Math.round10(this.reserve)]
 	}
-	
+
 	tick() {
-		this.r.setColor('rgba(0,0,255,' + this.reserve/this.maxCapacity  + ')')
+		this.r.setColor('rgba(0,0,255,' + this.reserve / this.maxCapacity + ')')
 	}
 }

@@ -1,86 +1,31 @@
 <html>
-	<head>
-		<meta itemprop="image" content="image.png">
-		<meta name="description" content="Simulations of classic product development process issues.">
-		<link rel="stylesheet" type="text/css" href="./css/default.css">
-		<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-		<script type="text/javascript" src="./js/thirdparty/jcanvas.min.js"></script>
-		<script type="text/javascript" src="./js/thirdparty/Chart.min.js"></script>
-		<script type="text/javascript" src="./js/layout.js"></script>
-		<script type="text/javascript" src="./js/ao.js"></script>
-		<script type="text/javascript" src="./js/actor.js"></script>
-		<script type="text/javascript" src="./js/models.js"></script>
-		<script type="text/javascript" src="./js/worker.js"></script>
-		<script type="text/javascript" src="./js/common-resource.js"></script>
 
-		<script type="text/javascript" src="./js/blackhole.js"></script>
-		<script type="text/javascript">
-			$(document).ready(function() {
-				var currentModel = 0
-				var container = $('#simulation')
-				var instructionText = "<br><br>Most interesting project is represented with "+color('rgba(100,255,0, 1)', "light green")+" circle,"+
-  				"while least interesting is "+color('rgba(100,0,0, 1)', "dark brown")+". "+
-  				"Point cursor to project and see how development speed changes. " +
-  				"Workers are modelled with blue dots. More saturated blue color dot has - more motivated current employee. " +
-  				"Point cursor to the blue dot and see how employee motivation and skills change depending on what project one works. " 
-				var models = [
-			  	new Engine(container, new DynamicCollaborationModel("Humans, 1c, noswitch", 30, 5).//
-			  		description(
-			  				"Number of employees work on some forcibly assigned topics permanently. "+
-			  				instructionText).//
-				  	updateTopicOpts({requiredWorkers:6}).//
-				  	updateWorkersOpts({retention:900, maxCompulsoryTopics:1, fatigueSimulation:true}).//
-				  	updateWorkerTopics((t, i) => t.interest=(5-i)/5)),
-			  	new Engine(container, new DynamicCollaborationModel("Humans, 1c, sync. switch", 30, 5).//
-		  			description("Number of employees work on some forcibly assigned topics with <i>synchronously</i> switch between topics periodically. " + 
-		  					instructionText).//
-				  	updateTopicOpts({requiredWorkers:6}).//
-				  	updateWorkersOpts({retention:20, maxCompulsoryTopics:1, fatigueSimulation:true}).//
-				  	updateWorkerTopics((t, i) => t.interest=(5-i)/5)),
-			  	new Engine(container, new DynamicCollaborationModel("Humans, 1c, 1opt, queued switchover", 30, 5).//
-		  			description(
-		  					"Number of employees work on some forcibly assigned topics with ability to share efforts with optinal interesting topic. "+
-		  					instructionText +
-		  					"From time to time employees are forced to switch between compulsory topics. ").//
-				  	updateTopicOpts({requiredWorkers:6}).//
-				  	updateWorkersOpts({retention:20, maxCompulsoryTopics:1, fatigueSimulation:true, maxOptionalTopics:1, synchronosSwitchover:false}).//
-				  	updateWorkerTopics((t, i) => t.interest=(5-i)/5))
-              	]
-				models.forEach((e, i) => {
-					e.stop()
-    				$('#modelSelector').append($('<option>', {
-    				    value: i,
-    				    text: e.getModel().getTitle()
-    				}))
-              	})
-              	
-              	$('#modelSelector').change(function() {
-              		models[currentModel].stop()
-              		models[currentModel = $(this).val()].start().pause()
-              	})
-              	$('#modelSelector').val(0)
-            
-             	models[0].start().pause()
-			});
-		</script>
-		<!-- Global site tag (gtag.js) - Google Analytics -->
-		<script async src="https://www.googletagmanager.com/gtag/js?id=UA-136303510-1"></script>
-		<script>
-		  window.dataLayer = window.dataLayer || [];
-		  function gtag(){dataLayer.push(arguments);}
-		  gtag('js', new Date());
-		
-		  gtag('config', 'UA-136303510-1');
-		</script>
-	</head>
-	<body>
-		<div class="top_controls">
-			<a href="index.html">&lt;&lt;</a>
-			|
-			<span>Model:</span>
-			<select id="modelSelector"></select>
-		</div>
-		
-		<div id="simulation" class="simulation"></div>
-	</body>
+<head>
+	<meta itemprop="image" content="image.png">
+	<meta name="description" content="Simulations of classic product development process issues.">
+	<link rel="stylesheet" type="text/css" href="./css/default.css">
+	<script type="text/javascript" src="./js/worker.js"></script>
+
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+	<script async src="https://www.googletagmanager.com/gtag/js?id=UA-136303510-1"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag() { dataLayer.push(arguments); }
+		gtag('js', new Date());
+
+		gtag('config', 'UA-136303510-1');
+	</script>
+</head>
+
+<body>
+	<div class="top_controls">
+		<a href="index.html">&lt;&lt;</a>
+		|
+		<span>Model:</span>
+		<select id="modelSelector"></select>
+	</div>
+
+	<div id="simulation" class="simulation"></div>
+</body>
+
 </html>

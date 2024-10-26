@@ -1,69 +1,29 @@
 <html>
-	<head>
-		<link rel="stylesheet" type="text/css" href="./css/default.css">
-		<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-		<script type="text/javascript" src="./js/thirdparty/jcanvas.min.js"></script>
-		<script type="text/javascript" src="./js/thirdparty/Chart.min.js"></script>
-		<script type="text/javascript" src="./js/layout.js"></script>
-		<script type="text/javascript" src="./js/ao.js"></script>
-		<script type="text/javascript" src="./js/actor.js"></script>
-		<script type="text/javascript" src="./js/models.js"></script>
 
-		<script type="text/javascript" src="./js/person.js"></script>
-		<script type="text/javascript" src="./js/common-resource.js"></script>
-		<script type="text/javascript">
-			$(document).ready(function() {
-				var currentModel = 0
-				var container = $('#simulation')
-				var memberInfo = "<br><br>All group members initially have randomized production and consumption rates. " + 
-					"If production "+color('blue', "equal or exceeds")+" consumption, member do well, "+color('red', "otherwice starves")+". "+
-					"If amount of member's capacity reaches zero, member dies. "+
-					"<br><br>Periodically member "+color('black', "change")+" production/consumption rate simulating natural causes (like enviromental change or deceases) ";
-				var models = [
-					new Engine(container, new SimpleTaxModel("No community savings", 30).
-						description("Model showing dynamics of group where members do not share resources with each other." +
-								memberInfo)),
-					new Engine(container, new SimpleTaxModel("Community savings", 30).
-							saveExcess().
-							description("Model showing dynamics of group where members share excessive resources with each other using sort of storage (circle in the center)." +
-									memberInfo + 
-									"If member starves, however, it can consume resource from the shared storage sustaining itself temporarilly before it wont "+
-									"be able to produce more then consume."))
-		
-					]
-				models.forEach((e, i) => {
-					e.stop()
-    				$('#modelSelector').append($('<option>', {
-    				    value: i,
-    				    text: e.getModel().getTitle()
-    				}))
-              	})
-              	
-              	$('#modelSelector').change(function() {
-              		models[currentModel].stop()
-              		models[currentModel = $(this).val()].start().pause()
-              	})
-              	$('#modelSelector').val(0)
-				models[0].start().pause()
-			});
-		</script>
-		<!-- Global site tag (gtag.js) - Google Analytics -->
-		<script async src="https://www.googletagmanager.com/gtag/js?id=UA-136303510-1"></script>
-		<script>
-		  window.dataLayer = window.dataLayer || [];
-		  function gtag(){dataLayer.push(arguments);}
-		  gtag('js', new Date());
-		
-		  gtag('config', 'UA-136303510-1');
-		</script>
-	</head>
-	<body>
-		<div class="top_controls">
-			<a href="index.html">&lt;&lt;</a>
-			|
-			<span>Model:</span>
-			<select id="modelSelector"></select>
-		</div>
-		<div id="simulation"></div>
-	</body>
+<head>
+	<link rel="stylesheet" type="text/css" href="./css/default.css">
+	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+	<script type="text/javascript" src="./js/person.js"></script>
+	<!-- <script type="text/javascript" src="./js/common-resource.js"></script> -->
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+	<script async src="https://www.googletagmanager.com/gtag/js?id=UA-136303510-1"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag() { dataLayer.push(arguments); }
+		gtag('js', new Date());
+
+		gtag('config', 'UA-136303510-1');
+	</script>
+</head>
+
+<body>
+	<div class="top_controls">
+		<a href="index.html">&lt;&lt;</a>
+		|
+		<span>Model:</span>
+		<select id="modelSelector"></select>
+	</div>
+	<div id="simulation"></div>
+</body>
+
 </html>

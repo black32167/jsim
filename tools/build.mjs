@@ -5,6 +5,8 @@ import sh from 'shelljs'
 function copySource(sourcePath, destDir) {
     sh.cp('-R', sourcePath, destDir)
 }
+
+var target = process.env.TARGET || 'dev'
 var buildDir = 'build'
 var sourceRootDir = 'src'
 var cssDir = `${sourceRootDir}/css`
@@ -20,20 +22,18 @@ copySource(`${sourceRootDir}/css`, buildDir)
 copySource(`${sourceRootDir}/img`, buildDir)
 copySource(`${sourceRootDir}/js/thirdparty`, `${buildDir}/js`)
 
-sh.cp('./css/*.css', cssDir)
 
+console.log(`target=${target}`)
 await esbuild.build({
     entryPoints: [
         `${jsSourceDir}/blackhole.js`,
         `${jsSourceDir}/worker.js`,
         `${jsSourceDir}/person.js`,
-        `${jsSourceDir}/ao.js`,
-        // `${jsSourceDir}/engine.js`
+        `${jsSourceDir}/ao.js`
     ],
-    // splitting: true,
-    // format: 'esm',
+
     bundle: true,
-    minify: false,
+    minify: target === 'publish',
     outdir: `${buildDir}/js`,
     target: "es2022",
     supported: {

@@ -116,7 +116,6 @@ export class Engine {
 								label: chartTitle,
 								data: [],
 								backgroundColor: [],
-								borderColor: [],
 								fill: false,
 								borderColor: 'rgba(255, 0, 0, 1)',
 								lineTension: 0,

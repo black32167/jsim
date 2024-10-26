@@ -37,6 +37,9 @@ export class Model {
 	getStateHeaders(agentId) {
 		return this.getAgent(agentId).stateHeaders()
 	}
+	getStateValueLimits(agentId) {
+		return this.getAgent(agentId).getValueLimits()
+	}
 	cleanStates() {
 		this.getAllAgents().forEach(a => a.cleanState())
 	}

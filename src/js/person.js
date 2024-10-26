@@ -6,10 +6,10 @@ import { Engine, color } from './ao.js'
 import $ from 'jquery'
 import 'jcanvas'
 
-// TODO: Wrong graph might be displayed when mouse hovers an agent
 class PersonBehavior extends ActorBehavior {
-	constructor(commonResource) {
+	constructor(id, commonResource) {
 		super()
+		this.id = id
 		this.resetParameters()
 		this.commonResource = commonResource
 		this.capacity = 5
@@ -35,6 +35,9 @@ class PersonBehavior extends ActorBehavior {
 	}
 	stateHeaders() {
 		return ['Health']
+	}
+	getValueLimits() {
+		return [{ max: 10 }]
 	}
 	state() {
 		return [Math.round10(this.capacity)]
@@ -70,12 +73,18 @@ class PersonBehavior extends ActorBehavior {
 			this.lastConsumed = internallyConsumed + externallyConsumed
 
 			var energyRate = (1 - Math.abs(this.capacity - this.maxCapacity) / this.maxCapacity)
-			if (this.prodRate > this.wasteRate) {
+			var productionBalance = this.prodRate - this.wasteRate
+			// console.log(`Energy for #${this.id} = ${energyRate}, balance=${productionBalance}`)
+
+			if (productionBalance > 0.1) {
 				this.p.setStrokeColor('blue')
-				this.p.setColor('rgba(0,0,255,' + energyRate + ')')
-			} else {
+				this.p.setColor(`rgba(0,0,255,${energyRate})`)
+			} else if (productionBalance < -0.1) {
 				this.p.setStrokeColor('red')
-				this.p.setColor('rgba(255,0,0,' + energyRate + ')')
+				this.p.setColor(`rgba(255,0,0,${energyRate})`)
+			} else {
+				this.p.setStrokeColor('gray')
+				this.p.setColor(`rgba(100,100,100,${energyRate})`)
 			}
 
 		}
@@ -96,7 +105,7 @@ class SimpleTaxModel extends Model {
 
 		this.allAgents = []
 		for (var i = 0; i < N; i++) {
-			var a = new PersonBehavior(this.commonResourceActor);
+			var a = new PersonBehavior(i, this.commonResourceActor);
 			this.allAgents.push(a)
 			layout.addRadialElement(a)
 		}
@@ -157,8 +166,11 @@ $(document).ready(function () {
 	})
 
 	$('#modelSelector').change(function () {
+		let selected = $(this).val()
 		models[currentModel].stop()
-		models[currentModel = $(this).val()].start().pause()
+		currentModel = selected
+		models[currentModel].start().pause()
+		//console.log(`resources accepted:${models[currentModel].commonResourceActor.acceptResources}`)
 	})
 	$('#modelSelector').val(0)
 	models[0].start().pause()

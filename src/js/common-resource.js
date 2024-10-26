@@ -28,6 +28,7 @@ export class ResourceBehavior extends ActorBehavior {
 	}
 
 	tick() {
+		// console.log(`${this.reserve}/${this.maxCapacity}=${this.reserve / this.maxCapacity} / ${this.acceptResources}`)
 		this.r.setColor('rgba(0,0,255,' + this.reserve / this.maxCapacity + ')')
 	}
 }

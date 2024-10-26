@@ -54,6 +54,9 @@ export class ActorBehavior {
 	stateHeaders() {
 		return []
 	}
+	getValueLimits() {
+		return []
+	}
 	state() {
 		return []
 	}

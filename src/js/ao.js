@@ -86,6 +86,7 @@ export class Engine {
 	}
 
 	showActorInfo(i) {
+		// console.log(`Showing history for #${i}`)
 		if (i == null) {
 			return
 		}
@@ -106,6 +107,7 @@ export class Engine {
 			this.charts = []
 			if (actorHistory != undefined && actorHistory.length > 0) {
 				for (var midx = 0; midx < actorHistory[0].length; midx++) {// Iterate over metrices
+					var maxValue = this.model.getStateValueLimits(i)[midx]?.max
 					var chartTitle = this.model.getStateHeaders(i)[midx]
 					var chartOptions = {
 						type: 'line',
@@ -133,7 +135,8 @@ export class Engine {
 							responsiveAnimationDuration: 0,
 							scales: {
 								y: {
-									beginAtZero: true
+									beginAtZero: true,
+									max: maxValue
 								}
 							}
 						}

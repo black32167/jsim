@@ -1,7 +1,7 @@
 import sh from 'shelljs'
 
 var buildDir = 'build'
-var publishDir = 'dist'
+var publishDir = 'docs'
 
 if (sh.test('-e', publishDir)) {
     sh.rm('-rf', publishDir)

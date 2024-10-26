@@ -1,3 +1,9 @@
+import { ActorBehavior, ActorShape } from './actor.js'
+import { Model } from './models.js'
+import { Engine, color } from './ao.js'
+import $ from 'jquery'
+import 'jcanvas'
+
 class WorkerLayout {
 	constructor() {
 		this.workers = []
@@ -10,23 +16,23 @@ class WorkerLayout {
 		this.topics.push(e)
 	}
 	arrange(c) {
-		
+
 		var topicsY = 50
 		var workersY = c.height() - 50
 
 		// Arrange topics
 		var topicsNum = this.topics.length
 		this.topics.forEach((a, i) => {
-			var step = (c.width() - 10)/topicsNum
-			a.setPos(step*(i+0.5)+5,
-					topicsY)
+			var step = (c.width() - 10) / topicsNum
+			a.setPos(step * (i + 0.5) + 5,
+				topicsY)
 		})
-		
+
 		// Arrange workers
 		var workersNum = this.workers.length
 		this.workers.forEach((a, i) => {
-			var step = (c.width() - 10)/workersNum
-			a.setPos(step*(i+0.5)+5,
+			var step = (c.width() - 10) / workersNum
+			a.setPos(step * (i + 0.5) + 5,
 				workersY)
 		})
 	}
@@ -38,14 +44,15 @@ class WorkerLayout {
 			w.getActorShape().draw(c);
 			var intTopics = w.getInterestedTopics()
 			intTopics.forEach(t => {
-				
+
 				var linkStart = w.getActorShape().getEdgePointToNormal(t.getActorShape().x, t.getActorShape().y)
 				var linkEnd = t.getActorShape().getEdgePointToNormal(w.getActorShape().x, w.getActorShape().y)
 				c.drawLine({
-				  strokeStyle: '#000',
-				  strokeWidth: 1,
-				  x1: linkStart.x, y1: linkStart.y,
-				  x2: linkEnd.x, y2: linkEnd.y})
+					strokeStyle: '#000',
+					strokeWidth: 1,
+					x1: linkStart.x, y1: linkStart.y,
+					x2: linkEnd.x, y2: linkEnd.y
+				})
 			})
 		})
 	}
@@ -58,7 +65,7 @@ class WorkerBehavior extends ActorBehavior {
 		this.totalWorkers = totalWorkers
 		this.maxCompulsoryTopics = 1
 		this.maxOptionalTopics = 0
-		this.retention=20
+		this.retention = 20
 		this.retentionTicks = 0
 		this.prificiencyDecayRate = 0.95
 		this.proficiencyDevelopingRate = 1.2
@@ -69,24 +76,24 @@ class WorkerBehavior extends ActorBehavior {
 		var _this = this
 		this.topics = topics.map(t => {
 			return {
-				topic:t,
-				interest:0.5,
+				topic: t,
+				interest: 0.5,
 				proficiency: 0.1,
-				contributing:false,
+				contributing: false,
 				fatigue: 0,
-				ticks:0,
-				lastContributedTick:0,
-				lastChangedTick:0,
+				ticks: 0,
+				lastContributedTick: 0,
+				lastChangedTick: 0,
 
-				contribute:function() {
-					if(this.contributing) {
+				contribute: function () {
+					if (this.contributing) {
 						throw "Already contributing!"
 					}
 					this.contributing = true
 					this.topic.workers++
 				},
-				abjure:function() {
-					if(this.contributing) {
+				abjure: function () {
+					if (this.contributing) {
 						this.contributing = false
 						this.topic.workers--
 					}
@@ -115,7 +122,7 @@ class WorkerBehavior extends ActorBehavior {
 	}
 	stateHeaders() {
 		var headers = ["Overall Motivation"]
-		for(var i = 0; i < this.topics.length; i++) {
+		for (var i = 0; i < this.topics.length; i++) {
 			headers.push("Skill in topic #" + i)
 		}
 		return headers
@@ -129,86 +136,86 @@ class WorkerBehavior extends ActorBehavior {
 		this.motivation = 0.5
 	}
 	getActorShape() { return this.w }
-	
+
 	getInterestedTopics() {
 		return this.topics.filter(t => t.contributing).map(t => t.topic);
 	}
-	
+
 	tick(tIdx) {//Disengage
 		//this.priority = 0
 		this.currentTick = tIdx
-		
+
 		var contibutingTopics = this.topics.filter(t => t.contributing)
 		contibutingTopics.forEach(t => t.abjure())
-		
+
 		//console.log("Stop contributing :" + this.idx)
 
-		if(this.synchronosSwitchover) {
-			
-			if(this.retentionTicks == 0) {
+		if (this.synchronosSwitchover) {
+
+			if (this.retentionTicks == 0) {
 				this.priority = tIdx
 				//console.log("priority = " + this.priority + ", idx = " + this.idx)
 			}
-			if(this.retentionTicks > this.retention) {
+			if (this.retentionTicks > this.retention) {
 				this.retentionTicks = 0
 			} else {
 				this.retentionTicks++
 			}
-			
+
 		} else {
-			if(tIdx % this.totalWorkers == this.idx) {
+			if (tIdx % this.totalWorkers == this.idx) {
 				this.priority = tIdx
 			}
 		}
 	}
-	
+
 	tick1(tIdx) {//Engage
-	
-		
-	    // Contribute to at least one topic which requires workforce
-	    this.assign(this.maxCompulsoryTopics, (t1, t2) => {
-	    	var deficit1 = t1.topic.requiredWorkers - t1.topic.workers
-	    	var deficit2 = t2.topic.requiredWorkers - t2.topic.workers
-	    	var c = -this.compareNums(deficit1, deficit2)
-	    	if(c == 0) {
-	    		//!!! return -this.compareByInterestAsc(t1, t2)
-		    	return this.compareNums(t1.lastChangedTick, t2.lastChangedTick)
-    		}
-    		return c
-	    })
 
-	    // Contribute to all other interesting topics
-	    this.assign(this.maxOptionalTopics+this.maxCompulsoryTopics, (t1, t2) => -this.compareByInterestAsc(t1, t2))
 
-		
+		// Contribute to at least one topic which requires workforce
+		this.assign(this.maxCompulsoryTopics, (t1, t2) => {
+			var deficit1 = t1.topic.requiredWorkers - t1.topic.workers
+			var deficit2 = t2.topic.requiredWorkers - t2.topic.workers
+			var c = -this.compareNums(deficit1, deficit2)
+			if (c == 0) {
+				//!!! return -this.compareByInterestAsc(t1, t2)
+				return this.compareNums(t1.lastChangedTick, t2.lastChangedTick)
+			}
+			return c
+		})
+
+		// Contribute to all other interesting topics
+		this.assign(this.maxOptionalTopics + this.maxCompulsoryTopics, (t1, t2) => -this.compareByInterestAsc(t1, t2))
+
+
 		// Update proficiency/fatigue in all topics
 		var currentContibutingTopics = this.topics.filter(t => t.contributing)
-		var maxInterest = currentContibutingTopics.map(t=>t.interest).reduce((a, b) => Math.max(a, b))
+		var maxInterest = currentContibutingTopics.map(t => t.interest).reduce((a, b) => Math.max(a, b))
 		this.topics.forEach(t => {
-			t.proficiency = this.sigmoid(t.ticks/3-1.5)*t.interest // Proficiency depends on interest
-			
-			if(this.fatigueSimulation) {
-				t.fatigue = this.sigmoid(t.ticks/3-1.5)*(1-(t.interest+maxInterest)/2) // Fatigue depends on interest
+			t.proficiency = this.sigmoid(t.ticks / 3 - 1.5) * t.interest // Proficiency depends on interest
+
+			if (this.fatigueSimulation) {
+				t.fatigue = this.sigmoid(t.ticks / 3 - 1.5) * (1 - (t.interest + maxInterest) / 2) // Fatigue depends on interest
 			}
 		})
-		
+
 		// Update topics being contributed
 		this.motivation = 0
-		
+
 		currentContibutingTopics.forEach((t, i) => {
-			if(this.priority == this.currentTick) {
-		    	if(t.lastContributedTick < this.currentTick) {
-		    		console.log("Topic #" + i + " has changed, priority = " + this.priority + ", tick=" + this.currentTick + ", lastCT = " + t.lastContributedTick)
+			if (this.priority == this.currentTick) {
+				if (t.lastContributedTick < this.currentTick) {
+					console.log("Topic #" + i + " has changed, priority = " + this.priority + ", tick=" + this.currentTick + ", lastCT = " + t.lastContributedTick)
 					t.lastChangedTick = this.currentTick
 				}
 			}
 
 			t.ticks++
-			
+
 			t.lastContributedTick = tIdx;
-			
-			this.motivation += t.interest*(1-t.fatigue)
-			t.topic.contribute(t.interest*(1-t.fatigue)*t.proficiency/currentContibutingTopics.length)
+
+			this.motivation += t.interest * (1 - t.fatigue)
+			t.topic.contribute(t.interest * (1 - t.fatigue) * t.proficiency / currentContibutingTopics.length)
 		});
 		this.motivation /= currentContibutingTopics.length
 		this.w.setColor('rgba(0,0,255,' + this.motivation + ')')
@@ -216,41 +223,41 @@ class WorkerBehavior extends ActorBehavior {
 		// Update dormant topics
 		var currentNonContibutingTopics = this.topics.filter(t => !t.contributing)
 		currentNonContibutingTopics.forEach(t => {
-			if(t.ticks > 0) t.ticks--
+			if (t.ticks > 0) t.ticks--
 		})
-		
-		
-		
+
+
+
 	}
-	
+
 	sigmoid(x) {
 		var ex = Math.pow(2.718, x)
-		return ex/(ex+1)
+		return ex / (ex + 1)
 	}
-	
+
 	assign(maxAssinments, comparator) {
 		var unassignedTopics = this.topics.filter(t => !t.contributing)
-	    unassignedTopics.sort(comparator)
+		unassignedTopics.sort(comparator)
 
-	    var count = Math.max(maxAssinments - this.topics.filter(t => t.contributing).length, 0)
-	    for(var i = 0; i < Math.min(count, unassignedTopics.length); i++) {
-	    	unassignedTopics[i].contribute()
-	    }
+		var count = Math.max(maxAssinments - this.topics.filter(t => t.contributing).length, 0)
+		for (var i = 0; i < Math.min(count, unassignedTopics.length); i++) {
+			unassignedTopics[i].contribute()
+		}
 
 	}
-	
+
 	allTicksFinished() {
-		
+
 	}
 	compareNums(n1, n2) {
-		if(n1 < n2){
-    		return -1
-		} else if(n1 > n2) {
+		if (n1 < n2) {
+			return -1
+		} else if (n1 > n2) {
 			return 1;
 		}
 		return 0;
 	}
-	
+
 	compareByInterestAsc(t1, t2) {
 		return this.compareNums(t1.interest, t2.interest)
 	}
@@ -279,7 +286,7 @@ class TopicBehavior extends ActorBehavior {
 		this.workersArr = workersArr
 		return this
 	}
-	
+
 	contribute(contributionRate) {
 		this.lastTickContribution += contributionRate
 	}
@@ -304,10 +311,10 @@ class TopicBehavior extends ActorBehavior {
 		this.devSpeed = this.lastTickContribution
 		this.lastTickContribution = 0
 		var interests = this.workersArr.map(w => w.getInterestIn(this.idx))
-		this.avgInterestRate = interests.reduce((p, c) => p + c, 0)/this.workersArr.length
-		this.deviation = Math.sqrt(interests.reduce((p, c) => p + Math.pow(c-this.avgInterestRate, 2), 0)/this.workersArr.length)
-		var intens = Math.round(255*this.avgInterestRate)
-		this.t.setColor('rgba(100,'+intens+',0, 1)')
+		this.avgInterestRate = interests.reduce((p, c) => p + c, 0) / this.workersArr.length
+		this.deviation = Math.sqrt(interests.reduce((p, c) => p + Math.pow(c - this.avgInterestRate, 2), 0) / this.workersArr.length)
+		var intens = Math.round(255 * this.avgInterestRate)
+		this.t.setColor('rgba(100,' + intens + ',0, 1)')
 	}
 	updateOpts(opts) {
 		$.extend(this, opts)
@@ -319,17 +326,17 @@ class DynamicCollaborationModel extends Model {
 		super(title)
 
 		var layout = new WorkerLayout()
-	
+
 		var topics = []
-		for(var i = 0; i < tN; i++) {
+		for (var i = 0; i < tN; i++) {
 			var tb = new TopicBehavior(i)
-	
+
 			topics.push(tb)
 			layout.addTopic(tb)
 		}
-		
+
 		var workers = []
-		for(var i = 0; i < wN; i++) {
+		for (var i = 0; i < wN; i++) {
 			var a = new WorkerBehavior(i, wN, topics);
 
 			workers.push(a)
@@ -346,16 +353,16 @@ class DynamicCollaborationModel extends Model {
 		this.layout.arrange(c)
 		this.layout.draw(c)
 	}
-	
+
 	getAgent(agentId) {
 		return this.allAgents[agentId]
 	}
 	getAllAgents() {
 		return this.allAgents
 	}
-	
+
 	tick(tIdx) {
-		this.workers.forEach((b,i) => {
+		this.workers.forEach((b, i) => {
 			b.tick(tIdx)
 		})
 
@@ -364,19 +371,19 @@ class DynamicCollaborationModel extends Model {
 			var n1 = w1.priority || 0
 			var n2 = w2.priority || 0
 			if(n1 < n2){
-	    		return -1
+				return -1
 			} else if(n1 > n2) {
 				return 1;
 			}
 			return 0;
 		})*/
-		sorted.forEach((b,i) => {
-			if(b.tick1 != undefined) {
+		sorted.forEach((b, i) => {
+			if (b.tick1 != undefined) {
 				b.tick1(tIdx)
 			}
 		})
-		
-		this.topics.forEach((b,i) => {
+
+		this.topics.forEach((b, i) => {
 			b.allTicksFinished()
 		})
 	}
@@ -393,9 +400,57 @@ class DynamicCollaborationModel extends Model {
 		this.workers.forEach(w => w.updateTopicsOpts(updateFunc))
 		return this
 	}
-	
-	
+
+
 	prepare(c) {
 		super.prepare(c)
 	}
 }
+
+$(document).ready(function () {
+	var currentModel = 0
+	var container = $('#simulation')
+	var instructionText = "<br><br>Most interesting project is represented with " + color('rgba(100,255,0, 1)', "light green") + " circle," +
+		"while least interesting is " + color('rgba(100,0,0, 1)', "dark brown") + ". " +
+		"Point cursor to project and see how development speed changes. " +
+		"Workers are modelled with blue dots. More saturated blue color dot has - more motivated current employee. " +
+		"Point cursor to the blue dot and see how employee motivation and skills change depending on what project one works. "
+	var models = [
+		new Engine(container, new DynamicCollaborationModel("Humans, 1c, noswitch", 30, 5).//
+			description(
+				"Number of employees work on some forcibly assigned topics permanently. " +
+				instructionText).//
+			updateTopicOpts({ requiredWorkers: 6 }).//
+			updateWorkersOpts({ retention: 900, maxCompulsoryTopics: 1, fatigueSimulation: true }).//
+			updateWorkerTopics((t, i) => t.interest = (5 - i) / 5)),
+		new Engine(container, new DynamicCollaborationModel("Humans, 1c, sync. switch", 30, 5).//
+			description("Number of employees work on some forcibly assigned topics with <i>synchronously</i> switch between topics periodically. " +
+				instructionText).//
+			updateTopicOpts({ requiredWorkers: 6 }).//
+			updateWorkersOpts({ retention: 20, maxCompulsoryTopics: 1, fatigueSimulation: true }).//
+			updateWorkerTopics((t, i) => t.interest = (5 - i) / 5)),
+		new Engine(container, new DynamicCollaborationModel("Humans, 1c, 1opt, queued switchover", 30, 5).//
+			description(
+				"Number of employees work on some forcibly assigned topics with ability to share efforts with optinal interesting topic. " +
+				instructionText +
+				"From time to time employees are forced to switch between compulsory topics. ").//
+			updateTopicOpts({ requiredWorkers: 6 }).//
+			updateWorkersOpts({ retention: 20, maxCompulsoryTopics: 1, fatigueSimulation: true, maxOptionalTopics: 1, synchronosSwitchover: false }).//
+			updateWorkerTopics((t, i) => t.interest = (5 - i) / 5))
+	]
+	models.forEach((e, i) => {
+		e.stop()
+		$('#modelSelector').append($('<option>', {
+			value: i,
+			text: e.getModel().getTitle()
+		}))
+	})
+
+	$('#modelSelector').change(function () {
+		models[currentModel].stop()
+		models[currentModel = $(this).val()].start().pause()
+	})
+	$('#modelSelector').val(0)
+
+	models[0].start().pause()
+});

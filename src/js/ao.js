@@ -1,4 +1,4 @@
-import Chart from 'chart.js/auto'
+import { PageLayoutManager } from './page-layout'
 import $ from 'jquery'
 
 Math.round10 = function (a) {
@@ -10,43 +10,13 @@ export function color(color, text) {
 export class Engine {
 
 	constructor(parent, model) {
+		this.layout = new PageLayoutManager(parent)
 
-		var substructure = $(`
-			<div id="simulation-structure" style="display:none;">
-				<div class="simulation-process">
-					<div class="visualization">
-					
-						<canvas class="mainCanvas" width="300" height="300"></canvas>
-					
-						<div class="info"></div>
-						
-					</div>
-				
-					<div>
-						<div class="graphs" class="scroll history" style="height:600px;width:100%;">
-						</div>
-					</div>
-				</div>
-				<div class="right-panel">
-					<div class="model-description">
-						TODO: description
-					</div>
-					<div class="controls">
-						<div><a href="#" class="startStop">Start</a></div>
-					</div>
-				</div>
-			</div>`)
-		parent.append(substructure)
-		substructure.show()
-		this.modelContainer = substructure
 
 		// Visualization
-		this.c = substructure.find('.mainCanvas')
-		this.infoContainer = substructure.find('.info')
+		this.c = this.layout.getMainCanvas()
 
 		// Graphs
-		this.historyContainer = substructure.find('.graphs')
-		this.descriptionContainer = substructure.find('.model-description')
 		this.model = model
 		this.tickDelay = 100
 		this.MAX_TICK = 1000
@@ -54,7 +24,6 @@ export class Engine {
 		this.history = {}
 		this.startTime = Date.now()
 
-		this.progressEnabled = true
 		this.tickNo = 0
 		this.selectedActor = null
 		this.active = false
@@ -62,16 +31,9 @@ export class Engine {
 		$(this.c).mousemove(e => {
 			this.trackMouse(e.offsetX, e.offsetY)
 		})
-		$(this.c).click(e => {
-			this.togglePause()
-		})
-
-		this.startStop = substructure.find('.startStop')
-		this.startStop.click(e => {
-
-			this.togglePause()
-		})
-
+		this.progressEnabled = true
+		this.layout.setStartStopListener((started) =>
+			this.progressEnabled = started)
 	}
 	getModel() {
 		return this.model
@@ -92,19 +54,19 @@ export class Engine {
 		}
 		var actorHistory = this.history[i]
 		if (this.selectedActor != i) {
-
 			// Display actor parameters
-			var wrapper = '<table>'
-			wrapper += '<tr><td style="text-align:right">Agent #</td><td>' + i + '</td></tr>'
-			this.model.getAgentMeta(i).forEach(function (e) {
-				wrapper += '<tr><td style="text-align:right">' + e[0] + ':</td><td>' + e[1] + '</td></tr>'
-			});
-			wrapper += '</table>'
-			this.infoContainer.html(wrapper)
-			$(this.infoContainer).show()
+			var properties = this.model.getAgentMeta(i)
+				.map(e => {
+					return {
+						name: e[0], value: e[1]
+					}
+				})
+			properties.unshift({ name: 'Agent', value: i })
+
+			this.layout.setModelStateInfo(properties)
 
 			var chartOptionsArray = []
-			this.charts = []
+
 			if (actorHistory != undefined && actorHistory.length > 0) {
 				for (var midx = 0; midx < actorHistory[0].length; midx++) {// Iterate over metrices
 					var maxValue = this.model.getStateValueLimits(i)[midx]?.max
@@ -143,17 +105,7 @@ export class Engine {
 					}
 					chartOptionsArray.push(chartOptions)
 				}
-
-				this.historyContainer.empty()
-				chartOptionsArray.forEach((chartOptions) => {
-					var id = Math.floor((1 + Math.random()) * 10000)
-					var chartDiv = $('<canvas id="chart' + id + '" height="200" class="chart">')
-					this.historyContainer.append(chartDiv)
-					var chart = new Chart('chart' + id, chartOptions)
-
-					this.charts.push(chart)
-					chart.render();
-				})
+				this.layout.setCharts(chartOptionsArray)
 
 				this.selectedActor = i
 			}
@@ -161,54 +113,27 @@ export class Engine {
 		}
 
 		if (actorHistory != undefined) {
-			actorHistory.forEach((e, midx) => {
-				e.forEach((e1, didx) => {
-					if (this.charts[didx] != undefined) {
-						var chart = this.charts[didx]
-						var data = chart.data
-
-						var ds = data.datasets[0]
-
-						if (midx > data.labels.length - 1) {
-							data.labels.push(data.labels.length)
-							ds.data.push(e1)
-						}
-
-					}
-				})
-			});
-			this.charts.forEach(c => c.update())
+			this.layout.updateCharts(actorHistory)
 		}
 
 	}
 
 	stop() {
-		this.modelContainer.hide()
+		this.layout.hide()
 		clearInterval(this.interval)
 		this.active = false
 		return this
 	}
-	togglePause() {
-		this.progressEnabled = !this.progressEnabled
-		if (this.progressEnabled) {
-			//			if(this.tickNo >= this.MAX_TICK) {
-			//				this.cleanHistory()
-			//			}
-			this.startStop.text('Stop')
-		} else {
-			this.startStop.text('Start')
-		}
 
-		return this.progressEnabled
-	}
 	pause() {
+		this.layout.setStarted(false)
 		this.progressEnabled = false
 		return this
 	}
 	start() {
 		this.active = true
-		this.modelContainer.show()
-		this.descriptionContainer.html(this.model.getDescription())
+		this.layout.show()
+		this.layout.setModelDescription(this.model.getDescription())
 		this.model.prepare(this.c)//TODO: do we need this?
 
 		requestAnimationFrame(() => { this.draw() })

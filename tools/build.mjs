@@ -9,7 +9,6 @@ function copySource(sourcePath, destDir) {
 var target = process.env.TARGET || 'dev'
 var buildDir = 'build'
 var sourceRootDir = 'src'
-var cssDir = `${sourceRootDir}/css`
 var jsSourceDir = `${sourceRootDir}/js`
 
 if (sh.test('-e', buildDir)) {
@@ -20,8 +19,6 @@ sh.mkdir(`${buildDir}/js`)
 copySource(`${sourceRootDir}/*.html`, buildDir)
 copySource(`${sourceRootDir}/css`, buildDir)
 copySource(`${sourceRootDir}/img`, buildDir)
-copySource(`${sourceRootDir}/js/thirdparty`, `${buildDir}/js`)
-
 
 console.log(`target=${target}`)
 await esbuild.build({
@@ -29,7 +26,8 @@ await esbuild.build({
         `${jsSourceDir}/blackhole.js`,
         `${jsSourceDir}/worker.js`,
         `${jsSourceDir}/person.js`,
-        `${jsSourceDir}/ao.js`
+        `${jsSourceDir}/ao.js`,
+        `${jsSourceDir}/particles/main.js`,
     ],
 
     bundle: true,

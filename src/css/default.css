@@ -49,8 +49,7 @@ canvas {
 	width:40%;
 	margin:10px;
 }
-.model-description {
-	
+.model-subpage-description {
 	margin-bottom:10px;
 }
 .visualization {
@@ -62,22 +61,26 @@ canvas {
     height: 100%;
     vertical-align: middle;
 }
+
+.table {
+	display: table;
+	border-spacing: 10px;
+}
+.row {
+	display:table-row;
+}
 .model_link {
 	width:120px;
 	height:100px;
 	text-align:center;
-	
 	vertical-align:middle;
-	float:left;
-	clear: left;
-	margin-right:10px;
-	margin-left:10px;
-	padding:20px 5px 5px 5px;
+	padding:5px;
 	border:1px solid blue;
 	border-radius:5px;
+	display:table-cell;
 }
 .model_decription {
-	float:left;
+	display: table-cell;
 }
 .top_controls {
 	border-radius:5px;

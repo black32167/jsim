@@ -1,6 +1,6 @@
 import { ActorBehavior, ActorShape } from './actor.js'
 import { ResourceBehavior } from './common-resource.js'
-import { CircularLayout } from './layout.js'
+import { CircularLayout } from './model-layout.js'
 import { Model } from './models.js'
 import { Engine, color } from './ao.js'
 import $ from 'jquery'

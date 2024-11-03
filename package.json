@@ -6,7 +6,7 @@
   "sideEffects": false,
   "scripts": {
     "build:dev": "TARGET=dev node ./tools/build.mjs",
-    "build:dist": "TARGET=publish node ./tools/build.mjs && node ./tools/publish.mjs",
+    "build:dist": "TARGET=publish node ./tools/build.mjs",
     "test": "jest"
   },
   "devDependencies": {

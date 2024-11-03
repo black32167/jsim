@@ -27,7 +27,7 @@ await esbuild.build({
         `${jsSourceDir}/worker.js`,
         `${jsSourceDir}/person.js`,
         `${jsSourceDir}/ao.js`,
-        `${jsSourceDir}/particles/main.js`,
+        `${jsSourceDir}/particles/particles-main.js`,
     ],
 
     bundle: true,

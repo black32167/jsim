@@ -3,7 +3,7 @@ import Chart from 'chart.js/auto'
 
 export class PageLayoutManager {
     constructor(parent) {
-        this.started = true
+        this.started = false
         var substructure = $(`
 			<div id="simulation-structure" style="display:none;">
 				<div class="simulation-process">
@@ -44,6 +44,10 @@ export class PageLayoutManager {
         $(this.mainCanvas).on('click', e => {
             this.togglePause()
         })
+    }
+
+    setLeftPanelWidth(width) {
+        this.modelContainer.find('.simulation-process').css({ width: width })
     }
 
     setStartStopListener(startStopListener) {

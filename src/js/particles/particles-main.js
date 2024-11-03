@@ -1,7 +1,9 @@
 import { Thing, Comet } from "./agent.js"
 import CollisionWorker from './worker/collisionWorker.worker.js';
+import { PageLayoutManager } from '../page-layout.js'
 import p5 from 'p5'
 import RBush from 'rbush';
+import $ from 'jquery'
 
 const canvasWidth = 500
 const canvasHeight = 600
@@ -14,6 +16,28 @@ const showRegions = false
 const progressWorkersCount = 8
 var isSuspended = true
 var inProgress = false
+
+$(function () {
+    var parent = $('#simulation')
+    var pageLayout = new PageLayoutManager(parent)
+    window.mainHtmlCanvas = pageLayout.getMainCanvas()[0]
+    pageLayout.setLeftPanelWidth(`${canvasWidth + 10}px`)
+    pageLayout.setStartStopListener((started) => {
+        console.log(`started=${started}`)
+        isSuspended = !started
+    })
+    pageLayout.setModelDescription(`
+        <p>
+        This model shows transition of ordered motion of group of particles to chaiotic behavior in the 2D box
+        and allows to observe <a target="_blank" href="https://en.wikipedia.org/wiki/Brownian_motion">Brownian motion</a>.
+        </p>
+        <p>
+        Click to anomation to start/stop it and use 'N' button to compute the next step.
+        </p>
+    `)
+
+    var p5engine = new p5(p5setup)
+})
 
 let p5setup = (_p5ctx) => {
     window.p5ctx = _p5ctx
@@ -81,10 +105,8 @@ let p5setup = (_p5ctx) => {
     /**/
 
     p5ctx.setup = () => {
-        var container = document.getElementById('simulation')
-        var canvas = p5ctx.createCanvas(canvasWidth, canvasHeight);
-        canvas.class('mainCanvas')
-        canvas.parent(container)
+        var canvas = p5ctx.createCanvas(canvasWidth, canvasHeight, mainHtmlCanvas);
+
         p5ctx.frameRate(10)
         if (window.Worker) {
             console.log("Worker supported!")
@@ -106,10 +128,6 @@ let p5setup = (_p5ctx) => {
     p5ctx.keyPressed = () => {
         console.log("pressed " + p5ctx.key)
         switch (p5ctx.key) {
-            case ' ':
-                isSuspended = !isSuspended
-                progressAgentsAndNext()
-                break
             case 'n':
             case 'N':
                 if (isSuspended) {
@@ -301,5 +319,5 @@ let p5setup = (_p5ctx) => {
     }
 }
 
-var p5engine = new p5(p5setup)
+
 

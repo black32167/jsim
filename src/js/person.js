@@ -22,8 +22,8 @@ class PersonBehavior extends ActorBehavior {
 
 	resetParameters() {
 		this.wasteRate = Math.random()
-		this.consRate = this.wasteRate * 1.1
-		this.prodRate = this.wasteRate + (this.wasteRate * (Math.random() - 0.5) / 2)
+		this.consRate = this.wasteRate// * 1.1
+		this.prodRate = Math.random()//0.5this.wasteRate + (this.wasteRate * (Math.random() - 0.5) / 2)
 	}
 	getActorShape() {
 		return this.p

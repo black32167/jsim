@@ -1,6 +1,7 @@
 import { ActorBehavior, ActorShape } from './actor.js'
 import { ResourceBehavior } from './common-resource.js'
 import { CircularLayout } from './model-layout.js'
+import { PageLayoutManager } from './page-layout'
 import { Model } from './models.js'
 import { Engine, color } from './ao.js'
 import $ from 'jquery'
@@ -141,15 +142,16 @@ class SimpleTaxModel extends Model {
 $(document).ready(function () {
 	var currentModel = 0
 	var container = $('#simulation')
+	var layout = new PageLayoutManager(container)
 	var memberInfo = "<br><br>All group members initially have randomized production and consumption rates. " +
 		"If production " + color('blue', "equal or exceeds") + " consumption, member do well, " + color('red', "otherwice starves") + ". " +
 		"If amount of member's capacity reaches zero, member dies. " +
 		"<br><br>Periodically member " + color('black', "change") + " production/consumption rate simulating natural causes (like enviromental change or deceases) ";
 	var models = [
-		new Engine(container, new SimpleTaxModel("No community savings", 30).
+		new Engine(layout, new SimpleTaxModel("No community savings", 30).
 			description("Model showing dynamics of group where members do not share resources with each other." +
 				memberInfo)),
-		new Engine(container, new SimpleTaxModel("Community savings", 30).
+		new Engine(layout, new SimpleTaxModel("Community savings", 30).
 			saveExcess().
 			description("Model showing dynamics of group where members share excessive resources with each other using sort of storage (circle in the center)." +
 				memberInfo +
@@ -169,9 +171,9 @@ $(document).ready(function () {
 		let selected = $(this).val()
 		models[currentModel].stop()
 		currentModel = selected
-		models[currentModel].start().pause()
+		models[currentModel].start().stop()
 		//console.log(`resources accepted:${models[currentModel].commonResourceActor.acceptResources}`)
 	})
 	$('#modelSelector').val(0)
-	models[0].start().pause()
+	models[0].start().stop()
 });

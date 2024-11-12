@@ -1,8 +1,10 @@
 import { ActorBehavior, ActorShape } from './actor.js'
 import { Model } from './models.js'
 import { Engine, color } from './ao.js'
+import { PageLayoutManager } from './page-layout'
 import $ from 'jquery'
 import 'jcanvas'
+import { mode } from 'mathjs'
 
 class WorkerLayout {
 	constructor() {
@@ -407,39 +409,41 @@ class DynamicCollaborationModel extends Model {
 	}
 }
 
-$(document).ready(function () {
+$(function () {
 	var currentModel = 0
 	var container = $('#simulation')
-	var instructionText = "<br><br>Most interesting project is represented with " + color('rgba(100,255,0, 1)', "light green") + " circle," +
-		"while least interesting is " + color('rgba(100,0,0, 1)', "dark brown") + ". " +
-		"Point cursor to project and see how development speed changes. " +
-		"Workers are modelled with blue dots. More saturated blue color dot has - more motivated current employee. " +
-		"Point cursor to the blue dot and see how employee motivation and skills change depending on what project one works. "
+	var layout = new PageLayoutManager(container)
+	layout.setStartStopListener((started) => {
+		//console.log(`Listener called:${started}`)
+		var model = models[currentModel]
+		if (started) {
+			model.start()
+		} else {
+			model.stop()
+		}
+	})
 	var models = [
-		new Engine(container, new DynamicCollaborationModel("Humans, 1c, noswitch", 30, 5).//
+		new Engine(layout, new DynamicCollaborationModel("Humans, 1c, noswitch", 30, 5).//
 			description(
-				"Number of employees work on some forcibly assigned topics permanently. " +
-				instructionText).//
+				"Number of employees work on some forcibly assigned topics permanently. ").//
 			updateTopicOpts({ requiredWorkers: 6 }).//
 			updateWorkersOpts({ retention: 900, maxCompulsoryTopics: 1, fatigueSimulation: true }).//
 			updateWorkerTopics((t, i) => t.interest = (5 - i) / 5)),
-		new Engine(container, new DynamicCollaborationModel("Humans, 1c, sync. switch", 30, 5).//
-			description("Number of employees work on some forcibly assigned topics with <i>synchronously</i> switch between topics periodically. " +
-				instructionText).//
+		new Engine(layout, new DynamicCollaborationModel("Humans, 1c, sync. switch", 30, 5).//
+			description("Number of employees work on some forcibly assigned topics with <i>synchronously</i> switch between topics periodically. ").//
 			updateTopicOpts({ requiredWorkers: 6 }).//
 			updateWorkersOpts({ retention: 20, maxCompulsoryTopics: 1, fatigueSimulation: true }).//
 			updateWorkerTopics((t, i) => t.interest = (5 - i) / 5)),
-		new Engine(container, new DynamicCollaborationModel("Humans, 1c, 1opt, queued switchover", 30, 5).//
+		new Engine(layout, new DynamicCollaborationModel("Humans, 1c, 1opt, queued switchover", 30, 5).//
 			description(
 				"Number of employees work on some forcibly assigned topics with ability to share efforts with optinal interesting topic. " +
-				instructionText +
 				"From time to time employees are forced to switch between compulsory topics. ").//
 			updateTopicOpts({ requiredWorkers: 6 }).//
 			updateWorkersOpts({ retention: 20, maxCompulsoryTopics: 1, fatigueSimulation: true, maxOptionalTopics: 1, synchronosSwitchover: false }).//
 			updateWorkerTopics((t, i) => t.interest = (5 - i) / 5))
 	]
 	models.forEach((e, i) => {
-		e.stop()
+		// e.stop()
 		$('#modelSelector').append($('<option>', {
 			value: i,
 			text: e.getModel().getTitle()
@@ -448,9 +452,9 @@ $(document).ready(function () {
 
 	$('#modelSelector').change(function () {
 		models[currentModel].stop()
-		models[currentModel = $(this).val()].start().pause()
+		models[currentModel = $(this).val()].start().stop()
 	})
 	$('#modelSelector').val(0)
 
-	models[0].start().pause()
+	models[0].start().stop()
 });

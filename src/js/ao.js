@@ -1,4 +1,3 @@
-import { PageLayoutManager } from './page-layout'
 import $ from 'jquery'
 
 Math.round10 = function (a) {
@@ -9,9 +8,8 @@ export function color(color, text) {
 }
 export class Engine {
 
-	constructor(parent, model) {
-		this.layout = new PageLayoutManager(parent)
-
+	constructor(layout, model) {
+		this.layout = layout
 
 		// Visualization
 		this.c = this.layout.getMainCanvas()
@@ -32,8 +30,8 @@ export class Engine {
 			this.trackMouse(e.offsetX, e.offsetY)
 		})
 		this.progressEnabled = true
-		this.layout.setStartStopListener((started) =>
-			this.progressEnabled = started)
+		// this.layout.setStartStopListener((started) =>
+		// 	this.progressEnabled = started)
 	}
 	getModel() {
 		return this.model
@@ -48,7 +46,7 @@ export class Engine {
 	}
 
 	showActorInfo(i) {
-		// console.log(`Showing history for #${i}`)
+		console.log(`Showing history for #${i}`)
 		if (i == null) {
 			return
 		}
@@ -119,20 +117,24 @@ export class Engine {
 	}
 
 	stop() {
-		this.layout.hide()
+		console.log('Stopped')
+		//this.layout.hide()
+		this.progressEnabled = false
 		clearInterval(this.interval)
 		this.active = false
 		return this
 	}
 
 	pause() {
-		this.layout.setStarted(false)
+		//	this.layout.setStarted(false)
 		this.progressEnabled = false
 		return this
 	}
 	start() {
+		console.log('Started')
+		this.progressEnabled = true
 		this.active = true
-		this.layout.show()
+		//this.layout.show()
 		this.layout.setModelDescription(this.model.getDescription())
 		this.model.prepare(this.c)//TODO: do we need this?
 

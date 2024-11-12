@@ -39,6 +39,6 @@ await esbuild.build({
     },
     plugins: [inlineWorkerPlugin({
         target: "es2022",
-        minify: false,
+        minify: target === 'publish',
     })]
 })

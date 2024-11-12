@@ -21,21 +21,22 @@ export class PageLayoutManager {
 					</div>
 				</div>
 				<div class="right-panel">
-					<div class="model-subpage-description">
-						TODO: description
-					</div>
+					
 					<div class="controls">
 						<div><a href="#" class="startStop">Start</a></div>
 					</div>
 				</div>
 			</div>`)
+
         parent.append(substructure)
+        $('#description').prependTo($('.controls'))
         substructure.show()
+
         this.modelContainer = substructure
         this.mainCanvas = substructure.find('.mainCanvas')
         this.infoContainer = substructure.find('.info')
         this.historyContainer = substructure.find('.graphs')
-        this.descriptionContainer = substructure.find('.model-subpage-description')
+        this.descriptionContainer = substructure.find('#model-details')
         this.startStop = substructure.find('.startStop')
 
         this.startStop.on('click', e => {

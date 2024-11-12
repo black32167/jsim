@@ -26,15 +26,7 @@ $(function () {
         console.log(`started=${started}`)
         isSuspended = !started
     })
-    pageLayout.setModelDescription(`
-        <p>
-        This model shows transition of ordered motion of group of particles to chaiotic behavior in the 2D box
-        and allows to observe <a target="_blank" href="https://en.wikipedia.org/wiki/Brownian_motion">Brownian motion</a>.
-        </p>
-        <p>
-        Click to anomation to start/stop it and use 'N' button to compute the next step.
-        </p>
-    `)
+    //pageLayout.setModelDescription(``)
 
     var p5engine = new p5(p5setup)
 })

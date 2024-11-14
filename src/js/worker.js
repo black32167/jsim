@@ -18,7 +18,6 @@ class WorkerLayout {
 		this.topics.push(e)
 	}
 	arrange(c) {
-
 		var topicsY = 50
 		var workersY = c.height() - 50
 

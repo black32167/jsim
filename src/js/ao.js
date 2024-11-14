@@ -14,7 +14,7 @@ export class Engine {
 		// Visualization
 		this.c = this.layout.getMainCanvas()
 
-		// Graphs
+		// "Graphs"
 		this.model = model
 		this.tickDelay = 100
 		this.MAX_TICK = 1000
@@ -24,12 +24,12 @@ export class Engine {
 
 		this.tickNo = 0
 		this.selectedActor = null
-		this.active = false
 
 		$(this.c).mousemove(e => {
 			this.trackMouse(e.offsetX, e.offsetY)
 		})
 		this.progressEnabled = true
+		this.interval = setInterval(() => { this.tick() }, this.tickDelay)
 		// this.layout.setStartStopListener((started) =>
 		// 	this.progressEnabled = started)
 	}
@@ -120,26 +120,19 @@ export class Engine {
 		console.log('Stopped')
 		//this.layout.hide()
 		this.progressEnabled = false
-		clearInterval(this.interval)
-		this.active = false
+		//clearInterval(this.interval)
 		return this
 	}
 
-	pause() {
-		//	this.layout.setStarted(false)
-		this.progressEnabled = false
-		return this
-	}
 	start() {
 		console.log('Started')
 		this.progressEnabled = true
-		this.active = true
 		//this.layout.show()
 		this.layout.setModelDescription(this.model.getDescription())
 		this.model.prepare(this.c)//TODO: do we need this?
 
 		requestAnimationFrame(() => { this.draw() })
-		this.interval = setInterval(() => { this.tick() }, this.tickDelay)
+		//this.interval = setInterval(() => { this.tick() }, this.tickDelay)
 
 		this.tick()
 		var agentId = this.model.getAllAgents()[0].id
@@ -173,9 +166,8 @@ export class Engine {
 			}
 			this.model.draw(c)
 		}
-		if (this.active) {
-			requestAnimationFrame(() => { this.draw() })
-		}
+
+		requestAnimationFrame(() => { this.draw() })
 	}
 
 	cleanHistory() {
@@ -188,9 +180,7 @@ export class Engine {
 
 		if (this.progressEnabled) {
 			if (this.tickNo >= this.MAX_TICK) {
-
-				this.pause()
-
+				this.stop()
 			} else {
 				this.model.tick(this.tickNo)
 

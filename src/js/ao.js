@@ -8,34 +8,39 @@ export function color(color, text) {
 }
 export class Engine {
 
-	constructor(layout, model) {
+	constructor(layout) {
 		this.layout = layout
 
 		// Visualization
 		this.c = this.layout.getMainCanvas()
 
 		// "Graphs"
-		this.model = model
+		this.setModel(undefined)
 		this.tickDelay = 100
 		this.MAX_TICK = 1000
 
+		$(this.c).mousemove(e => {
+			this.trackMouse(e.offsetX, e.offsetY)
+		})
+
+		this.interval = setInterval(() => { this.tick() }, this.tickDelay)
+	}
+	getModel() {
+		return this.model
+	}
+
+	setModel(model) {
+		this.model = model
+
+		// Reset state
 		this.history = {}
 		this.startTime = Date.now()
 
 		this.tickNo = 0
 		this.selectedActor = null
+		this.progressEnabled = false
+	}
 
-		$(this.c).mousemove(e => {
-			this.trackMouse(e.offsetX, e.offsetY)
-		})
-		this.progressEnabled = true
-		this.interval = setInterval(() => { this.tick() }, this.tickDelay)
-		// this.layout.setStartStopListener((started) =>
-		// 	this.progressEnabled = started)
-	}
-	getModel() {
-		return this.model
-	}
 
 	trackMouse(x, y) {
 		var hit = false

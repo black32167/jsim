@@ -11,6 +11,16 @@ export class Engine {
 	constructor(layout) {
 		this.layout = layout
 
+		this.layout.setStartStopListener((started) => {
+			//console.log(`Listener called:${started}`)
+			//var model = models[currentModel]
+			if (started) {
+				this.start()
+			} else {
+				this.stop()
+			}
+		})
+
 		// Visualization
 		this.c = this.layout.getMainCanvas()
 
@@ -39,6 +49,11 @@ export class Engine {
 		this.tickNo = 0
 		this.selectedActor = null
 		this.progressEnabled = false
+		if (model != undefined) {
+			this.layout.setModelDescription(this.model.getDescription())
+			requestAnimationFrame(() => { this.draw() })
+			model.prepare(this.c)
+		}
 	}
 
 
@@ -133,7 +148,7 @@ export class Engine {
 		console.log('Started')
 		this.progressEnabled = true
 		//this.layout.show()
-		this.layout.setModelDescription(this.model.getDescription())
+
 		this.model.prepare(this.c)//TODO: do we need this?
 
 		requestAnimationFrame(() => { this.draw() })

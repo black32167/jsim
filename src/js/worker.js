@@ -4,6 +4,7 @@ import { Engine } from './ao.js'
 import { PageLayoutManager } from './page-layout'
 import $ from 'jquery'
 import 'jcanvas'
+import { PresetControl } from './input-control/preset-control.js'
 
 class WorkerLayout {
 	constructor() {
@@ -410,6 +411,7 @@ class DynamicCollaborationModel extends Model {
 var parameters = [
 	{
 		title: "Humans, 1c, noswitch",
+		description: "Number of employees work on some forcibly assigned topics permanently. ",
 		workersCount: 30,
 		topicsCount: 5,
 		workerOptions: { retention: 900, maxCompulsoryTopics: 1, fatigueSimulation: true },
@@ -417,6 +419,7 @@ var parameters = [
 	},
 	{
 		title: "Humans, 1c, sync. switch",
+		description: "Number of employees work on some forcibly assigned topics with <i>synchronously</i> switch between topics periodically. ",
 		workersCount: 30,
 		topicsCount: 5,
 		workerOptions: { retention: 20, maxCompulsoryTopics: 1, fatigueSimulation: true },
@@ -424,6 +427,8 @@ var parameters = [
 	},
 	{
 		title: "Humans, 1c, 1opt, queued switchover",
+		description: "Number of employees work on some forcibly assigned topics with ability to share efforts with optinal interesting topic. " +
+			"From time to time employees are forced to switch between compulsory topics. ",
 		workersCount: 30,
 		topicsCount: 5,
 		workerOptions: { retention: 20, maxCompulsoryTopics: 1, fatigueSimulation: true, maxOptionalTopics: 1, synchronosSwitchover: false },
@@ -432,55 +437,19 @@ var parameters = [
 ]
 
 $(function () {
-	var currentModel = 0
-	var container = $('#simulation')
-	var layout = new PageLayoutManager(container)
-	layout.setStartStopListener((started) => {
-		//console.log(`Listener called:${started}`)
-		//var model = models[currentModel]
-		if (started) {
-			engine.start()
-		} else {
-			engine.stop()
+	var engine = new Engine(new PageLayoutManager($('#simulation')))
+
+	var presetControl = new PresetControl(
+		'#modelSelector',
+		parameters,
+		engine,
+		(modelParameters) => {
+			return new DynamicCollaborationModel(modelParameters.title, modelParameters.workersCount, modelParameters.topicsCount).
+				description(modelParameters.description).//
+				updateTopicOpts(modelParameters.topicOptions).//
+				updateWorkersOpts(modelParameters.workerOptions).//
+				updateWorkerTopics((t, i) => t.interest = (5 - i) / 5)
 		}
-	})
-
-	var engine = new Engine(layout)
-
-	function updateModel(layout) {
-		if (undefined != undefined) {
-			engine.destroy();
-		}
-		let selectedIndex = $('#modelSelector').val()
-		console.log(`selected idx = ${selectedIndex}`)
-		let modelParameters = parameters[selectedIndex]
-
-		let model = new DynamicCollaborationModel(modelParameters.title, modelParameters.workersCount, modelParameters.topicsCount).
-			description(
-				"Number of employees work on some forcibly assigned topics permanently. ").//
-			updateTopicOpts(modelParameters.topicOptions).//
-			updateWorkersOpts(modelParameters.workerOptions).//
-			updateWorkerTopics((t, i) => t.interest = (5 - i) / 5)
-
-		engine.setModel(model)
-
-	}
-
-
-	parameters.forEach((e, i) => {
-		// e.stop()
-		$('#modelSelector').append($('<option>', {
-			value: i,
-			text: e.title
-		}))
-	})
-
-	$('#modelSelector').on('change', function (value) {
-		updateModel(layout)
-
-	})
-	$('#modelSelector').val(0)
-
-	updateModel(layout)
+	)
 });
 

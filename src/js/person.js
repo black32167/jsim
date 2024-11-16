@@ -6,6 +6,7 @@ import { Model } from './models.js'
 import { Engine, color } from './ao.js'
 import $ from 'jquery'
 import 'jcanvas'
+import { PresetControl } from './input-control/preset-control.js'
 
 class PersonBehavior extends ActorBehavior {
 	constructor(id, commonResource) {
@@ -114,8 +115,8 @@ class SimpleTaxModel extends Model {
 
 		this.layout = layout
 	}
-	saveExcess() {
-		this.commonResourceActor.acceptResources = true
+	saveExcess(acceptResources) {
+		this.commonResourceActor.acceptResources = acceptResources
 		return this
 	}
 
@@ -138,42 +139,34 @@ class SimpleTaxModel extends Model {
 		this.layout.arrange(c)//TODO: DO we need this?
 	}
 }
-
-$(document).ready(function () {
-	var currentModel = 0
+var parameters = [
+	{
+		title: "No community savings",
+		description: "Model showing dynamics of group where members do not share resources with each other.",
+		saveExcess: false,
+	},
+	{
+		title: "Community savings",
+		description: "Model showing dynamics of group where members share excessive resources with each other using sort of storage (circle in the center)." +
+			"If member starves, however, it can consume resource from the shared storage sustaining itself temporarilly before it wont " +
+			"be able to produce more then consume.",
+		saveExcess: true,
+	}
+]
+$(function () {
 	var container = $('#simulation')
 	var layout = new PageLayoutManager(container)
-	var memberInfo = "<br><br>All group members initially have randomized production and consumption rates. " +
-		"If production " + color('blue', "equal or exceeds") + " consumption, member do well, " + color('red', "otherwice starves") + ". " +
-		"If amount of member's capacity reaches zero, member dies. " +
-		"<br><br>Periodically member " + color('black', "change") + " production/consumption rate simulating natural causes (like enviromental change or deceases) ";
-	var models = [
-		new Engine(layout, new SimpleTaxModel("No community savings", 30).
-			description("Model showing dynamics of group where members do not share resources with each other." +
-				memberInfo)),
-		new Engine(layout, new SimpleTaxModel("Community savings", 30).
-			saveExcess().
-			description("Model showing dynamics of group where members share excessive resources with each other using sort of storage (circle in the center)." +
-				memberInfo +
-				"If member starves, however, it can consume resource from the shared storage sustaining itself temporarilly before it wont " +
-				"be able to produce more then consume."))
+	var engine = new Engine(layout)
 
-	]
-	models.forEach((e, i) => {
-		e.stop()
-		$('#modelSelector').append($('<option>', {
-			value: i,
-			text: e.getModel().getTitle()
-		}))
-	})
 
-	$('#modelSelector').change(function () {
-		let selected = $(this).val()
-		models[currentModel].stop()
-		currentModel = selected
-		models[currentModel].start().stop()
-		//console.log(`resources accepted:${models[currentModel].commonResourceActor.acceptResources}`)
-	})
-	$('#modelSelector').val(0)
-	models[0].start().stop()
+	new PresetControl(
+		'#modelSelector',
+		parameters,
+		engine,
+		(modelParameters) => {
+			return new SimpleTaxModel(modelParameters.title, 30).
+				description(modelParameters.description).//
+				saveExcess(modelParameters.saveExcess)
+		}
+	)
 });

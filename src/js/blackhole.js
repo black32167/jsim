@@ -164,17 +164,8 @@ class ParticleActor extends ActorBehavior {
 }
 
 $(function () {
-	var currentModel = 0
 	var container = $('#simulation')
 	var layout = new PageLayoutManager(container)
-	var model = new Engine(layout, new BlackholeModel("Black hole"))
-	layout.setStartStopListener((started) => {
-		//console.log(`Listener called:${started}`)
-		if (started) {
-			model.start()
-		} else {
-			model.stop()
-		}
-	})
-	model.start().stop()
+	var engine = new Engine(layout)
+	engine.setModel(new BlackholeModel("Black hole"))
 })

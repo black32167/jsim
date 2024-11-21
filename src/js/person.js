@@ -167,7 +167,8 @@ $(function () {
 
 	function updateModel() {
 		let modelParameters = preset.getSelectedParameters()
-		let model = new SimpleTaxModel(modelParameters.title, 30).
+		let membersCount = $('#input-membersCount').val()
+		let model = new SimpleTaxModel(modelParameters.title, membersCount).
 			description(modelParameters.description).//
 			saveExcess(modelParameters.saveExcess)
 

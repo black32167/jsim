@@ -26,7 +26,7 @@ await esbuild.build({
         `${jsSourceDir}/blackhole.js`,
         `${jsSourceDir}/worker.js`,
         `${jsSourceDir}/person.js`,
-        `${jsSourceDir}/ao.js`,
+        `${jsSourceDir}/engine.js`,
         `${jsSourceDir}/particles/particles-main.js`,
     ],
 

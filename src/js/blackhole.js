@@ -1,7 +1,7 @@
 
 import { ActorBehavior, ActorShape } from './actor.js'
 import { Model } from './models.js'
-import { Engine } from './ao.js'
+import { Engine } from './engine.js'
 import { PageLayoutManager } from './page-layout'
 import $ from 'jquery'
 import 'jcanvas'
@@ -12,7 +12,7 @@ class BlackholeModel extends Model {
 		this.agentsCounter = 1
 		this.bh = new BlackholeActor(0)
 		this.particles = []
-		this.maxParticles = 30
+
 		this.allAgents = [this.bh]
 	}
 
@@ -163,9 +163,17 @@ class ParticleActor extends ActorBehavior {
 	}
 }
 
+
 $(function () {
 	var container = $('#simulation')
 	var layout = new PageLayoutManager(container)
+		.onReset(updateModel)
 	var engine = new Engine(layout)
-	engine.setModel(new BlackholeModel("Black hole"))
+
+	function updateModel() {
+		let model = new BlackholeModel("Black hole")
+		engine.setModel(model)
+	}
+
+	updateModel()
 })

@@ -3,7 +3,7 @@ import { ResourceBehavior } from './common-resource.js'
 import { CircularLayout } from './model-layout.js'
 import { PageLayoutManager } from './page-layout'
 import { Model } from './models.js'
-import { Engine, color } from './ao.js'
+import { Engine } from './engine.js'
 import $ from 'jquery'
 import 'jcanvas'
 import { PresetControl } from './input-control/preset-control.js'
@@ -156,17 +156,21 @@ var parameters = [
 $(function () {
 	var container = $('#simulation')
 	var layout = new PageLayoutManager(container)
+		.onReset(updateModel)
 	var engine = new Engine(layout)
 
-
-	new PresetControl(
+	let preset = new PresetControl(
 		'#modelSelector',
-		parameters,
-		engine,
-		(modelParameters) => {
-			return new SimpleTaxModel(modelParameters.title, 30).
-				description(modelParameters.description).//
-				saveExcess(modelParameters.saveExcess)
-		}
+		parameters
 	)
+	preset.onSelectionChanged(updateModel)
+
+	function updateModel() {
+		let modelParameters = preset.getSelectedParameters()
+		let model = new SimpleTaxModel(modelParameters.title, 30).
+			description(modelParameters.description).//
+			saveExcess(modelParameters.saveExcess)
+
+		engine.setModel(model)
+	}
 });

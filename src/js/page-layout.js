@@ -23,13 +23,20 @@ export class PageLayoutManager {
 				<div class="right-panel">
 					
 					<div class="controls">
-						<div><a href="#" class="startStop">Start</a></div>
+						<div>
+                          <a href="#" class="startStop">Start</a>
+                          &nbsp;&nbsp;<a href="#" id="reset" style="display:none">Reset</a>
+                        </div>
 					</div>
 				</div>
 			</div>`)
 
         parent.append(substructure)
-        $('#description').prependTo($('.controls'))
+        this.controls = $('.controls')
+        $('#inputs').prependTo(this.controls)
+        $('#description').prependTo(this.controls)
+
+
         substructure.show()
 
         this.modelContainer = substructure
@@ -38,6 +45,11 @@ export class PageLayoutManager {
         this.historyContainer = substructure.find('.graphs')
         this.descriptionContainer = substructure.find('#model-details')
         this.startStop = substructure.find('.startStop')
+        this.reset = $('#reset')
+
+        this.reset.on('click', e => {
+            this.resetListener()
+        })
 
         this.startStop.on('click', e => {
             this.togglePause()
@@ -47,6 +59,11 @@ export class PageLayoutManager {
         })
     }
 
+    onReset(resetListener) {
+        this.reset.show()
+        this.resetListener = resetListener
+        return this
+    }
     setLeftPanelWidth(width) {
         this.modelContainer.find('.simulation-process').css({ width: width })
     }
@@ -83,6 +100,11 @@ export class PageLayoutManager {
 
     getMainCanvas() {
         return this.mainCanvas
+    }
+
+    cleanInfo() {
+        this.infoContainer.empty()
+        this.historyContainer.empty()
     }
 
     // {name, value}[]

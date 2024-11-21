@@ -29,7 +29,7 @@ export class Engine {
 		this.tickDelay = 100
 		this.MAX_TICK = 1000
 
-		$(this.c).mousemove(e => {
+		$(this.c).on('mousemove', e => {
 			this.trackMouse(e.offsetX, e.offsetY)
 		})
 
@@ -49,8 +49,9 @@ export class Engine {
 		this.tickNo = 0
 		this.selectedActor = null
 		this.progressEnabled = false
+		this.layout.cleanInfo()
 		if (model != undefined) {
-			this.layout.setModelDescription(this.model.getDescription())
+			this.layout.setModelDescription(model.getDescription())
 			requestAnimationFrame(() => { this.draw() })
 			model.prepare(this.c)
 		}

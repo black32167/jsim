@@ -1,6 +1,6 @@
 import { ActorBehavior, ActorShape } from './actor.js'
 import { Model } from './models.js'
-import { Engine } from './ao.js'
+import { Engine } from './engine.js'
 import { PageLayoutManager } from './page-layout'
 import $ from 'jquery'
 import 'jcanvas'
@@ -437,19 +437,26 @@ var parameters = [
 ]
 
 $(function () {
-	var engine = new Engine(new PageLayoutManager($('#simulation')))
+	let layout = new PageLayoutManager($('#simulation'))
+		.onReset(updateModel)
+	let engine = new Engine(layout)
 
-	var presetControl = new PresetControl(
+	var preset = new PresetControl(
 		'#modelSelector',
-		parameters,
-		engine,
-		(modelParameters) => {
-			return new DynamicCollaborationModel(modelParameters.title, modelParameters.workersCount, modelParameters.topicsCount).
-				description(modelParameters.description).//
-				updateTopicOpts(modelParameters.topicOptions).//
-				updateWorkersOpts(modelParameters.workerOptions).//
-				updateWorkerTopics((t, i) => t.interest = (5 - i) / 5)
-		}
+		parameters
 	)
+	preset.onSelectionChanged(updateModel)
+
+	function updateModel() {
+		let selectedModelPrameters = preset.getSelectedParameters()
+		selectedModelPrameters.workersCount = $('#input-maxWorkers').val()
+		let model = new DynamicCollaborationModel(selectedModelPrameters.title, selectedModelPrameters.workersCount, selectedModelPrameters.topicsCount).
+			description(selectedModelPrameters.description).//
+			updateTopicOpts(selectedModelPrameters.topicOptions).//
+			updateWorkersOpts(selectedModelPrameters.workerOptions).//
+			updateWorkerTopics((t, i) => t.interest = (5 - i) / 5)
+
+		engine.setModel(model)
+	}
 });
 

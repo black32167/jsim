@@ -25,7 +25,7 @@ export class PageLayoutManager {
 					<div class="controls">
 						<div>
                           <a href="#" class="startStop">Start</a>
-                          &nbsp;&nbsp;<a href="#" id="reset" style="display:none">Reset</a>
+                          &nbsp;&nbsp;<a href="#" id="reset" style="display:none">Apply parameters</a>
                         </div>
 					</div>
 				</div>
@@ -48,6 +48,7 @@ export class PageLayoutManager {
         this.reset = $('#reset')
 
         this.reset.on('click', e => {
+            this.setStarted(false)
             this.resetListener()
         })
 
@@ -73,7 +74,13 @@ export class PageLayoutManager {
     }
 
     togglePause() {
-        this.started = !this.started
+        this.setStarted(!this.started)
+
+    }
+
+
+    setStarted(started) {
+        this.started = started
         if (this.started) {
             this.startStop.text('Stop')
         } else {
@@ -83,11 +90,6 @@ export class PageLayoutManager {
         if (this.startStopListener !== undefined) {
             this.startStopListener(this.started)
         }
-    }
-
-
-    setStarted(started) {
-        this.started = started
     }
 
     show() {
@@ -102,9 +104,10 @@ export class PageLayoutManager {
         return this.mainCanvas
     }
 
-    cleanInfo() {
+    resetLayout() {
         this.infoContainer.empty()
         this.historyContainer.empty()
+        this.setStarted(false)
     }
 
     // {name, value}[]

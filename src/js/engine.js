@@ -49,7 +49,7 @@ export class Engine {
 		this.tickNo = 0
 		this.selectedActor = null
 		this.progressEnabled = false
-		this.layout.cleanInfo()
+		this.layout.resetLayout()
 		if (model != undefined) {
 			this.layout.setModelDescription(model.getDescription())
 			requestAnimationFrame(() => { this.draw() })

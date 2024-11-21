@@ -8,34 +8,55 @@ export function color(color, text) {
 }
 export class Engine {
 
-	constructor(layout, model) {
+	constructor(layout) {
 		this.layout = layout
+
+		this.layout.setStartStopListener((started) => {
+			//console.log(`Listener called:${started}`)
+			//var model = models[currentModel]
+			if (started) {
+				this.start()
+			} else {
+				this.stop()
+			}
+		})
 
 		// Visualization
 		this.c = this.layout.getMainCanvas()
 
 		// "Graphs"
-		this.model = model
+		this.setModel(undefined)
 		this.tickDelay = 100
 		this.MAX_TICK = 1000
 
+		$(this.c).on('mousemove', e => {
+			this.trackMouse(e.offsetX, e.offsetY)
+		})
+
+		this.interval = setInterval(() => { this.tick() }, this.tickDelay)
+	}
+	getModel() {
+		return this.model
+	}
+
+	setModel(model) {
+		this.model = model
+
+		// Reset state
 		this.history = {}
 		this.startTime = Date.now()
 
 		this.tickNo = 0
 		this.selectedActor = null
+		this.progressEnabled = false
+		this.layout.resetLayout()
+		if (model != undefined) {
+			this.layout.setModelDescription(model.getDescription())
+			requestAnimationFrame(() => { this.draw() })
+			model.prepare(this.c)
+		}
+	}
 
-		$(this.c).mousemove(e => {
-			this.trackMouse(e.offsetX, e.offsetY)
-		})
-		this.progressEnabled = true
-		this.interval = setInterval(() => { this.tick() }, this.tickDelay)
-		// this.layout.setStartStopListener((started) =>
-		// 	this.progressEnabled = started)
-	}
-	getModel() {
-		return this.model
-	}
 
 	trackMouse(x, y) {
 		var hit = false
@@ -128,7 +149,7 @@ export class Engine {
 		console.log('Started')
 		this.progressEnabled = true
 		//this.layout.show()
-		this.layout.setModelDescription(this.model.getDescription())
+
 		this.model.prepare(this.c)//TODO: do we need this?
 
 		requestAnimationFrame(() => { this.draw() })

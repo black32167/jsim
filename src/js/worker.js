@@ -1,10 +1,10 @@
 import { ActorBehavior, ActorShape } from './actor.js'
 import { Model } from './models.js'
-import { Engine, color } from './ao.js'
+import { Engine } from './engine.js'
 import { PageLayoutManager } from './page-layout'
 import $ from 'jquery'
 import 'jcanvas'
-import { mode } from 'mathjs'
+import { PresetControl } from './input-control/preset-control.js'
 
 class WorkerLayout {
 	constructor() {
@@ -206,7 +206,7 @@ class WorkerBehavior extends ActorBehavior {
 		currentContibutingTopics.forEach((t, i) => {
 			if (this.priority == this.currentTick) {
 				if (t.lastContributedTick < this.currentTick) {
-					console.log("Topic #" + i + " has changed, priority = " + this.priority + ", tick=" + this.currentTick + ", lastCT = " + t.lastContributedTick)
+					// console.log("Topic #" + i + " has changed, priority = " + this.priority + ", tick=" + this.currentTick + ", lastCT = " + t.lastContributedTick)
 					t.lastChangedTick = this.currentTick
 				}
 			}
@@ -408,52 +408,55 @@ class DynamicCollaborationModel extends Model {
 	}
 }
 
+var parameters = [
+	{
+		title: "Humans, 1c, noswitch",
+		description: "Number of employees work on some forcibly assigned topics permanently. ",
+		workersCount: 30,
+		topicsCount: 5,
+		workerOptions: { retention: 900, maxCompulsoryTopics: 1, fatigueSimulation: true },
+		topicOptions: { requiredWorkers: 6 }
+	},
+	{
+		title: "Humans, 1c, sync. switch",
+		description: "Number of employees work on some forcibly assigned topics with <i>synchronously</i> switch between topics periodically. ",
+		workersCount: 30,
+		topicsCount: 5,
+		workerOptions: { retention: 20, maxCompulsoryTopics: 1, fatigueSimulation: true },
+		topicOptions: { requiredWorkers: 6 }
+	},
+	{
+		title: "Humans, 1c, 1opt, queued switchover",
+		description: "Number of employees work on some forcibly assigned topics with ability to share efforts with optinal interesting topic. " +
+			"From time to time employees are forced to switch between compulsory topics. ",
+		workersCount: 30,
+		topicsCount: 5,
+		workerOptions: { retention: 20, maxCompulsoryTopics: 1, fatigueSimulation: true, maxOptionalTopics: 1, synchronosSwitchover: false },
+		topicOptions: { requiredWorkers: 6 }
+	}
+]
+
 $(function () {
-	var currentModel = 0
-	var container = $('#simulation')
-	var layout = new PageLayoutManager(container)
-	layout.setStartStopListener((started) => {
-		//console.log(`Listener called:${started}`)
-		var model = models[currentModel]
-		if (started) {
-			model.start()
-		} else {
-			model.stop()
-		}
-	})
-	var models = [
-		new Engine(layout, new DynamicCollaborationModel("Humans, 1c, noswitch", 30, 5).//
-			description(
-				"Number of employees work on some forcibly assigned topics permanently. ").//
-			updateTopicOpts({ requiredWorkers: 6 }).//
-			updateWorkersOpts({ retention: 900, maxCompulsoryTopics: 1, fatigueSimulation: true }).//
-			updateWorkerTopics((t, i) => t.interest = (5 - i) / 5)),
-		new Engine(layout, new DynamicCollaborationModel("Humans, 1c, sync. switch", 30, 5).//
-			description("Number of employees work on some forcibly assigned topics with <i>synchronously</i> switch between topics periodically. ").//
-			updateTopicOpts({ requiredWorkers: 6 }).//
-			updateWorkersOpts({ retention: 20, maxCompulsoryTopics: 1, fatigueSimulation: true }).//
-			updateWorkerTopics((t, i) => t.interest = (5 - i) / 5)),
-		new Engine(layout, new DynamicCollaborationModel("Humans, 1c, 1opt, queued switchover", 30, 5).//
-			description(
-				"Number of employees work on some forcibly assigned topics with ability to share efforts with optinal interesting topic. " +
-				"From time to time employees are forced to switch between compulsory topics. ").//
-			updateTopicOpts({ requiredWorkers: 6 }).//
-			updateWorkersOpts({ retention: 20, maxCompulsoryTopics: 1, fatigueSimulation: true, maxOptionalTopics: 1, synchronosSwitchover: false }).//
-			updateWorkerTopics((t, i) => t.interest = (5 - i) / 5))
-	]
-	models.forEach((e, i) => {
-		// e.stop()
-		$('#modelSelector').append($('<option>', {
-			value: i,
-			text: e.getModel().getTitle()
-		}))
-	})
+	let layout = new PageLayoutManager($('#simulation'))
+		.onReset(updateModel)
+	let engine = new Engine(layout)
 
-	$('#modelSelector').change(function () {
-		models[currentModel].stop()
-		models[currentModel = $(this).val()].start().stop()
-	})
-	$('#modelSelector').val(0)
+	var preset = new PresetControl(
+		'#modelSelector',
+		parameters
+	)
+	preset.onSelectionChanged(updateModel)
 
-	models[0].start().stop()
+	function updateModel() {
+		let selectedModelPrameters = preset.getSelectedParameters()
+		selectedModelPrameters.workersCount = $('#input-maxWorkers').val()
+		let model = new DynamicCollaborationModel(selectedModelPrameters.title, selectedModelPrameters.workersCount, selectedModelPrameters.topicsCount).
+			description(selectedModelPrameters.description).//
+			updateTopicOpts(selectedModelPrameters.topicOptions).//
+			updateWorkersOpts(selectedModelPrameters.workerOptions).//
+			updateWorkerTopics((t, i) => t.interest = (5 - i) / 5)
+
+		engine.setModel(model)
+	}
 });
+

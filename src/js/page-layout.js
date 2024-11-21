@@ -23,13 +23,20 @@ export class PageLayoutManager {
 				<div class="right-panel">
 					
 					<div class="controls">
-						<div><a href="#" class="startStop">Start</a></div>
+						<div>
+                          <a href="#" class="startStop">Start</a>
+                          &nbsp;&nbsp;<a href="#" id="reset" style="display:none">Apply parameters</a>
+                        </div>
 					</div>
 				</div>
 			</div>`)
 
         parent.append(substructure)
-        $('#description').prependTo($('.controls'))
+        this.controls = $('.controls')
+        $('#inputs').prependTo(this.controls)
+        $('#description').prependTo(this.controls)
+
+
         substructure.show()
 
         this.modelContainer = substructure
@@ -38,6 +45,12 @@ export class PageLayoutManager {
         this.historyContainer = substructure.find('.graphs')
         this.descriptionContainer = substructure.find('#model-details')
         this.startStop = substructure.find('.startStop')
+        this.reset = $('#reset')
+
+        this.reset.on('click', e => {
+            this.setStarted(false)
+            this.resetListener()
+        })
 
         this.startStop.on('click', e => {
             this.togglePause()
@@ -47,6 +60,11 @@ export class PageLayoutManager {
         })
     }
 
+    onReset(resetListener) {
+        this.reset.show()
+        this.resetListener = resetListener
+        return this
+    }
     setLeftPanelWidth(width) {
         this.modelContainer.find('.simulation-process').css({ width: width })
     }
@@ -56,7 +74,13 @@ export class PageLayoutManager {
     }
 
     togglePause() {
-        this.started = !this.started
+        this.setStarted(!this.started)
+
+    }
+
+
+    setStarted(started) {
+        this.started = started
         if (this.started) {
             this.startStop.text('Stop')
         } else {
@@ -66,10 +90,6 @@ export class PageLayoutManager {
         if (this.startStopListener !== undefined) {
             this.startStopListener(this.started)
         }
-    }
-
-    setStarted(started) {
-        this.started = started
     }
 
     show() {
@@ -82,6 +102,12 @@ export class PageLayoutManager {
 
     getMainCanvas() {
         return this.mainCanvas
+    }
+
+    resetLayout() {
+        this.infoContainer.empty()
+        this.historyContainer.empty()
+        this.setStarted(false)
     }
 
     // {name, value}[]

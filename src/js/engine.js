@@ -43,7 +43,8 @@ export class Engine {
 		this.model = model
 
 		// Reset state
-		this.history = {}
+		this.actorHistory = {}
+		this.aggregatedHistory = {}
 		this.startTime = Date.now()
 
 		this.tickNo = 0
@@ -63,24 +64,26 @@ export class Engine {
 		var agentId = this.model.getAgentIdAt(x, y)
 		if (agentId != undefined) {
 			this.showActorInfo(agentId)
+		} else {
+			this.showActorInfo("aggregated")
 		}
 	}
 
-	showActorInfo(i) {
-		console.log(`Showing history for #${i}`)
-		if (i == null) {
+	showActorInfo(agentId) {
+		console.log(`Showing history for #${agentId}`)
+		if (!this.model.hasAgent(agentId)) {
 			return
 		}
-		var actorHistory = this.history[i]
-		if (this.selectedActor != i) {
+		var actorHistory = this.actorHistory[agentId]
+		if (this.selectedActor != agentId) {
 			// Display actor parameters
-			var properties = this.model.getAgentMeta(i)
+			var properties = this.model.getAgentMeta(agentId)
 				.map(e => {
 					return {
 						name: e[0], value: e[1]
 					}
 				})
-			properties.unshift({ name: 'Agent', value: i })
+			properties.unshift({ name: 'Agent', value: agentId })
 
 			this.layout.setModelStateInfo(properties)
 
@@ -88,8 +91,8 @@ export class Engine {
 
 			if (actorHistory != undefined && actorHistory.length > 0) {
 				for (var midx = 0; midx < actorHistory[0].length; midx++) {// Iterate over metrices
-					var maxValue = this.model.getStateValueLimits(i)[midx]?.max
-					var chartTitle = this.model.getStateHeaders(i)[midx]
+					var maxValue = this.model.getStateValueLimits(agentId)[midx]?.max
+					var chartTitle = this.model.getStateHeaders(agentId)[midx]
 					var chartOptions = {
 						type: 'line',
 
@@ -126,7 +129,7 @@ export class Engine {
 				}
 				this.layout.setCharts(chartOptionsArray)
 
-				this.selectedActor = i
+				this.selectedActor = agentId
 			}
 
 		}
@@ -150,7 +153,7 @@ export class Engine {
 		this.progressEnabled = true
 		//this.layout.show()
 
-		this.model.prepare(this.c)//TODO: do we need this?
+		// this.model.prepare(this.c)//TODO: do we need this?
 
 		requestAnimationFrame(() => { this.draw() })
 		//this.interval = setInterval(() => { this.tick() }, this.tickDelay)
@@ -192,7 +195,8 @@ export class Engine {
 	}
 
 	cleanHistory() {
-		this.history = {}
+		this.actorHistory = {}
+		this.aggregatedHistory = {}
 		this.tickNo = 1
 		this.showActorInfo(this.selectedActor)
 		this.model.cleanStates()
@@ -205,14 +209,27 @@ export class Engine {
 			} else {
 				this.model.tick(this.tickNo)
 
-				var statesMap = this.model.getStates()
-
+				// Save agents history
+				let statesMap = this.model.getAgentStates()
 				for (var id in statesMap) {
-					if (this.history[id] == undefined) {
-						this.history[id] = []
+					if (this.actorHistory[id] == undefined) {
+						this.actorHistory[id] = []
 					}
-					this.history[id].push(statesMap[id])
+					this.actorHistory[id].push(statesMap[id])
 				}
+
+				// Save aggregated history
+				// [{header:"Consumption", value:0}]
+				// let aggregatedState = this.model.getAggregatedState()
+				// for (var parameter of aggregatedState) {
+				// 	if (this.aggregatedHistory[parameter.title] == undefined) {
+				// 		this.aggregatedHistory[parameter.title] = {
+				// 			title:parameter.title,
+				// 			values:
+				// 		}
+				// 	} 
+				// }
+
 				this.tickNo++
 				this.showActorInfo(this.selectedActor)
 			}

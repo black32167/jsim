@@ -8,8 +8,17 @@ export class Model {
 		return this.title
 	}
 
-	tick() {
-		throw "tick not implemented"
+	tick(tIdx) {
+		let agentEntries = Object.entries(this.getAllAgents())
+		for (const [id, agent] of agentEntries) {
+			agent.preAction(tIdx)
+		}
+		for (const [id, agent] of agentEntries) {
+			agent.action(tIdx)
+		}
+		for (const [id, agent] of agentEntries) {
+			agent.postAction(tIdx)
+		}
 	}
 
 	draw(c) {
@@ -17,19 +26,21 @@ export class Model {
 	}
 
 	prepare(c) {
-		this.getAllAgents().forEach((a, i) => {
-			if (a.id == undefined) {
-				a.id = i
-			}
-		})
-
 	}
+
 	getAgentMeta(id) {
-		return this.getAgent(id).meta()
+		let agentMeta = this.getAgent(id) || (() => { throw `Agent '${id}' was not found` })()
+
+		return agentMeta.meta()
 	}
 	getAgent(agentId) {
-		throw "getAgent not implemented"
+		return this.getAllAgents()[agentId]
 	}
+
+	hasAgent(id) {
+		return this.getAllAgents()[id] !== undefined
+	}
+	// {id, agent}
 	getAllAgents() {
 		throw "getAllAgents not implemented"
 	}
@@ -41,14 +52,22 @@ export class Model {
 		return this.getAgent(agentId).getValueLimits()
 	}
 	cleanStates() {
-		this.getAllAgents().forEach(a => a.cleanState())
+		for (const [id, agent] of Object.entries(this.getAllAgents())) {
+			agent.cleanState()
+		}
 	}
-	getStates() {
+	// TODO: collapse with 'getStateHeaders'?
+	getAgentStates() {
 		var state = {}
-		this.getAllAgents().forEach(a => {
-			state[a.id] = a.state()
-		})
+		for (const [id, agent] of Object.entries(this.getAllAgents())) {
+			state[agent.id] = agent.state()
+		}
 		return state
+	}
+
+	// header->average(all agents) 
+	getAggregatedState() {
+		return {}
 	}
 	description(desc) {
 		this.descriptionText = desc
@@ -60,17 +79,12 @@ export class Model {
 
 	getAgentIdAt(x, y) {
 		var allAgents = this.getAllAgents()
-		for (var i = 0; i < allAgents.length; i++) {
-			var a = allAgents[i]
-
-			if (a.getActorShape().hasPoint(x, y)) {
-				return a.id
+		for (const [id, agent] of Object.entries(this.getAllAgents())) {
+			if (agent.getActorShape() !== undefined && agent.getActorShape().hasPoint(x, y)) {
+				return agent.id
 			}
 		}
 		return undefined
 	}
 
 }
-
-
-

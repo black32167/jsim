@@ -45,7 +45,7 @@ class PersonBehavior extends ActorBehavior {
 		return [Math.round10(this.capacity)]
 	}
 
-	tick() {
+	action() {
 		this.lastConsumed = 0
 
 		if (this.capacity > 0) { // If alive
@@ -99,21 +99,22 @@ class SimpleTaxModel extends Model {
 		super(title)
 		this.actorsNum = N
 
-		var layout = new CircularLayout()
+		var modelLayout = new CircularLayout()
 
 		this.commonResourceActor = new ResourceBehavior()
 
-		layout.setCentralElement(this.commonResourceActor)
+		modelLayout.setCentralElement(this.commonResourceActor)
 
-		this.allAgents = []
+		this.allAgents = {}
+
 		for (var i = 0; i < N; i++) {
 			var a = new PersonBehavior(i, this.commonResourceActor);
-			this.allAgents.push(a)
-			layout.addRadialElement(a)
+			this.allAgents[a.id] = a
+			modelLayout.addRadialElement(a)
 		}
-		this.allAgents.push(this.commonResourceActor)
+		this.allAgents[this.commonResourceActor.id] = this.commonResourceActor
 
-		this.layout = layout
+		this.modelLayout = modelLayout
 	}
 	saveExcess(acceptResources) {
 		this.commonResourceActor.acceptResources = acceptResources
@@ -121,22 +122,14 @@ class SimpleTaxModel extends Model {
 	}
 
 	draw(c) {
-		this.layout.draw(c)
+		this.modelLayout.draw(c)
 	}
 
-	tick(tIdx) {
-		this.allAgents.forEach(a => a.tick(tIdx))
-	}
-
-	getAgent(agentId) {
-		return this.allAgents[agentId]
-	}
 	getAllAgents() {
 		return this.allAgents
 	}
 	prepare(c) {
-		super.prepare(c)
-		this.layout.arrange(c)//TODO: DO we need this?
+		this.modelLayout.arrange(c)
 	}
 }
 var parameters = [
@@ -155,9 +148,9 @@ var parameters = [
 ]
 $(function () {
 	var container = $('#simulation')
-	var layout = new PageLayoutManager(container)
+	var pageLayout = new PageLayoutManager(container)
 		.onReset(updateModel)
-	var engine = new Engine(layout)
+	var engine = new Engine(pageLayout)
 
 	let preset = new PresetControl(
 		'#modelSelector',

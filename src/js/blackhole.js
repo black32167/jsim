@@ -26,7 +26,7 @@ class BlackholeModel extends Model {
 				releasedIdxs.push(i)
 				this.bh.released++
 			} else {
-				p.tick()
+				p.action()
 				this.bh.mass += 0.05
 				this.bh.detained++
 			}
@@ -93,9 +93,7 @@ class BlackholeActor extends ActorBehavior {
 	getMass() {
 		return this.mass
 	}
-	tick() {
 
-	}
 	getActorShape() {
 		return this.shape
 	}
@@ -126,10 +124,9 @@ class ParticleActor extends ActorBehavior {
 		this.cos = 1
 		this.impulse = 5
 		this.mass = mass
-
 	}
 
-	tick() {
+	action() {
 		var mX = this.mass.getActorShape().x
 		var mY = this.mass.getActorShape().y
 		var pX = this.getActorShape().x

@@ -1,4 +1,4 @@
-import { ActorBehavior, ActorShape } from './actor.js'
+import { ActorBehavior, ActorShape, AggregatedStateBehavior } from './actor.js'
 import { Model } from './models.js'
 import { Engine } from './engine.js'
 import { PageLayoutManager } from './page-layout'
@@ -70,7 +70,7 @@ class WorkerBehavior extends ActorBehavior {
 		this.retentionTicks = 0
 		this.prificiencyDecayRate = 0.95
 		this.proficiencyDevelopingRate = 1.2
-		this.synchronosSwitchover = true
+		this.synchronousSwitchover = true
 		this.fatigueSimulation = false
 		this.seekMandatoryExperience = false
 
@@ -142,7 +142,7 @@ class WorkerBehavior extends ActorBehavior {
 		return this.topics.filter(t => t.contributing).map(t => t.topic);
 	}
 
-	tick(tIdx) {//Disengage
+	preAction(tIdx) {//Disengage
 		//this.priority = 0
 		this.currentTick = tIdx
 
@@ -151,7 +151,7 @@ class WorkerBehavior extends ActorBehavior {
 
 		//console.log("Stop contributing :" + this.idx)
 
-		if (this.synchronosSwitchover) {
+		if (this.synchronousSwitchover) {
 
 			if (this.retentionTicks == 0) {
 				this.priority = tIdx
@@ -170,7 +170,7 @@ class WorkerBehavior extends ActorBehavior {
 		}
 	}
 
-	tick1(tIdx) {//Engage
+	action(tIdx) {//Engage
 
 
 		// Contribute to at least one topic which requires workforce
@@ -247,7 +247,7 @@ class WorkerBehavior extends ActorBehavior {
 
 	}
 
-	allTicksFinished() {
+	postAction() {
 
 	}
 	compareNums(n1, n2) {
@@ -308,7 +308,7 @@ class TopicBehavior extends ActorBehavior {
 		this.devSpeed = 0
 		this.workers = 0
 	}
-	allTicksFinished() {
+	postAction() {
 		this.devSpeed = this.lastTickContribution
 		this.lastTickContribution = 0
 		var interests = this.workersArr.map(w => w.getInterestIn(this.idx))
@@ -346,8 +346,15 @@ class DynamicCollaborationModel extends Model {
 		topics.forEach(t => t.setWorkers(workers))
 		this.topics = topics
 		this.workers = workers
+		this.aggregatedState = new AggregatedStateBehavior(workers)
 		this.layout = layout
-		this.allAgents = this.workers.concat(this.topics)
+		this.allAgents = {}
+		this.workers
+			.concat(this.topics)
+			.concat([this.aggregatedState])
+			.forEach(a => {
+				this.allAgents[a.id] = a
+			})
 	}
 
 	draw(c) {
@@ -355,38 +362,8 @@ class DynamicCollaborationModel extends Model {
 		this.layout.draw(c)
 	}
 
-	getAgent(agentId) {
-		return this.allAgents[agentId]
-	}
 	getAllAgents() {
 		return this.allAgents
-	}
-
-	tick(tIdx) {
-		this.workers.forEach((b, i) => {
-			b.tick(tIdx)
-		})
-
-		var sorted = this.workers.slice()
-		/*sorted.sort((w1, w2) => {
-			var n1 = w1.priority || 0
-			var n2 = w2.priority || 0
-			if(n1 < n2){
-				return -1
-			} else if(n1 > n2) {
-				return 1;
-			}
-			return 0;
-		})*/
-		sorted.forEach((b, i) => {
-			if (b.tick1 != undefined) {
-				b.tick1(tIdx)
-			}
-		})
-
-		this.topics.forEach((b, i) => {
-			b.allTicksFinished()
-		})
 	}
 
 	updateTopicOpts(opts) {
@@ -403,8 +380,23 @@ class DynamicCollaborationModel extends Model {
 	}
 
 
-	prepare(c) {
-		super.prepare(c)
+	// [{title:"Consumption", value:0}]
+	getAggregatedState() {
+		let aggregatedState = []
+
+		let w0 = this.workers[0]
+		w0.stateHeaders().forEach(wh => aggregatedState.push({
+			title: wh,
+			value: 0
+		}))
+		this.workers.forEach(w => {
+			for (let i = 0; i < aggregatedState.length; i++) {
+				aggregatedState[i].value += w.state()[i]
+			}
+		})
+		let wokersCount = this.workers.length
+		aggregatedState.forEach(parameter => parameter.value /= wokersCount)
+		return aggregatedState
 	}
 }
 
@@ -431,7 +423,7 @@ var parameters = [
 			"From time to time employees are forced to switch between compulsory topics. ",
 		workersCount: 30,
 		topicsCount: 5,
-		workerOptions: { retention: 20, maxCompulsoryTopics: 1, fatigueSimulation: true, maxOptionalTopics: 1, synchronosSwitchover: false },
+		workerOptions: { retention: 20, maxCompulsoryTopics: 1, fatigueSimulation: true, maxOptionalTopics: 1, synchronousSwitchover: false },
 		topicOptions: { requiredWorkers: 6 }
 	}
 ]

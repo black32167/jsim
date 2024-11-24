@@ -40,16 +40,25 @@ export class ActorShape {
 		}
 	}
 }
-
+var nextId = 0
 export class ActorBehavior {
+	constructor(id) {
+		this.id = id || nextId++
+	}
 	getActorShape() {
-		throw "Not implemented"
+		return undefined
 	}
 	setPos(x, y) {
 		this.getActorShape().setPos(x, y)
 	}
 	meta() {
 		return []
+	}
+	preAction(tickNo) {
+	}
+	action(tickNo) {
+	}
+	postAction(tickNo) {
 	}
 	stateHeaders() {
 		return []
@@ -60,6 +69,24 @@ export class ActorBehavior {
 	state() {
 		return []
 	}
-	tick() { }
-	allTicksFinished() { }
+}
+
+export class AggregatedStateBehavior extends ActorBehavior {
+	constructor(agentsToAggregate) {
+		super("aggregated")
+		this.agentsToAggregate = agentsToAggregate
+		this.v = 0
+	}
+	stateHeaders() {
+		return ["Header"]
+	}
+	getValueLimits() {
+		return [100]
+	}
+	state() {
+		return [this.v]
+	}
+	action(tickNo) {
+		this.v = Math.min(100, this.v + 1)
+	}
 }

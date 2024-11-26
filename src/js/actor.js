@@ -78,13 +78,31 @@ export class AggregatedStateBehavior extends ActorBehavior {
 		this.v = 0
 	}
 	stateHeaders() {
-		return ["Header"]
+		let agents = Object.values(this.agentsToAggregate)
+		if (agents.length == 0) {
+			return []
+		}
+
+		return [... agents[0].stateHeaders()]
 	}
 	getValueLimits() {
 		return [100]
 	}
 	state() {
-		return [this.v]
+		const agents = Object.values(this.agentsToAggregate)
+
+		const aggregatedMetrics = Array(this.stateHeaders().length).fill(0)
+		const aggregatedMetricsCount = [... aggregatedMetrics]
+		for(const agent of agents) {
+			agent.state().forEach((metricValue, metricIdx) => {
+				aggregatedMetrics[metricIdx] += metricValue
+				aggregatedMetricsCount[metricIdx] ++
+			})
+		}
+		for(const idx in aggregatedMetrics) {
+			aggregatedMetrics[idx] /= aggregatedMetricsCount[idx]
+		}
+		return aggregatedMetrics
 	}
 	action(tickNo) {
 		this.v = Math.min(100, this.v + 1)

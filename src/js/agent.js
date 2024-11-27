@@ -86,7 +86,11 @@ export class AggregatedStateBehavior extends AgentBehavior {
 		return [... agents[0].stateHeaders()]
 	}
 	getValueLimits() {
-		return [100]
+		let agents = Object.values(this.agentsToAggregate)
+		if (agents.length == 0) {
+			return []
+		}
+		return [... agents[0].getValueLimits()]
 	}
 	state() {
 		const agents = Object.values(this.agentsToAggregate)

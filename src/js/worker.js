@@ -128,6 +128,9 @@ class WorkerBehavior extends AgentBehavior {
 		}
 		return headers
 	}
+	getValueLimits() {
+		return Array(this.stateHeaders().length).fill({max:1.0})
+	}
 	state() {
 		var stateValues = [this.motivation]
 		this.topics.forEach(t => stateValues.push(Math.round10(t.proficiency)))

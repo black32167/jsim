@@ -1,4 +1,4 @@
-export class ActorShape {
+export class AgentShape {
 	constructor() {
 		this.r = 10
 		this.x = 10
@@ -41,15 +41,15 @@ export class ActorShape {
 	}
 }
 var nextId = 0
-export class ActorBehavior {
+export class AgentBehavior {
 	constructor(id) {
 		this.id = id || nextId++
 	}
-	getActorShape() {
+	getAgentShape() {
 		return undefined
 	}
 	setPos(x, y) {
-		this.getActorShape().setPos(x, y)
+		this.getAgentShape().setPos(x, y)
 	}
 	meta() {
 		return []
@@ -71,7 +71,7 @@ export class ActorBehavior {
 	}
 }
 
-export class AggregatedStateBehavior extends ActorBehavior {
+export class AggregatedStateBehavior extends AgentBehavior {
 	constructor(agentsToAggregate) {
 		super("aggregated")
 		this.agentsToAggregate = agentsToAggregate

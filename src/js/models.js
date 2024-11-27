@@ -80,7 +80,7 @@ export class Model {
 	getAgentIdAt(x, y) {
 		var allAgents = this.getAllAgents()
 		for (const [id, agent] of Object.entries(this.getAllAgents())) {
-			if (agent.getActorShape() !== undefined && agent.getActorShape().hasPoint(x, y)) {
+			if (agent.getAgentShape() !== undefined && agent.getAgentShape().hasPoint(x, y)) {
 				return agent.id
 			}
 		}

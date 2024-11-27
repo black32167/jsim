@@ -1,14 +1,14 @@
-import { ActorBehavior, ActorShape } from './actor.js'
-export class ResourceBehavior extends ActorBehavior {
+import { AgentBehavior, AgentShape } from './agent.js'
+export class ResourceBehavior extends AgentBehavior {
 
 	constructor() {
 		super()
-		this.r = new ActorShape()
+		this.r = new AgentShape()
 		this.reserve = 0
 		this.maxCapacity = 10
 		this.acceptResources = false
 	}
-	getActorShape() {
+	getAgentShape() {
 		return this.r
 	}
 	meta() {

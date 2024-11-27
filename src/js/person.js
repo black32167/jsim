@@ -1,4 +1,4 @@
-import { ActorBehavior, ActorShape } from './actor.js'
+import { AgentBehavior, AgentShape } from './agent.js'
 import { ResourceBehavior } from './common-resource.js'
 import { CircularLayout } from './model-layout.js'
 import { PageLayoutManager } from './page-layout'
@@ -8,7 +8,7 @@ import $ from 'jquery'
 import 'jcanvas'
 import { PresetControl } from './input-control/preset-control.js'
 
-class PersonBehavior extends ActorBehavior {
+class PersonBehavior extends AgentBehavior {
 	constructor(id, commonResource) {
 		super()
 		this.id = id
@@ -18,7 +18,7 @@ class PersonBehavior extends ActorBehavior {
 		this.maxCapacity = 10
 		this.resetParametersAfterTick = 100
 		this.tickNo = 0
-		this.p = new ActorShape()
+		this.p = new AgentShape()
 		this.useCommunityResource = false
 	}
 
@@ -27,7 +27,7 @@ class PersonBehavior extends ActorBehavior {
 		this.consRate = this.wasteRate// * 1.1
 		this.prodRate = Math.random()//0.5this.wasteRate + (this.wasteRate * (Math.random() - 0.5) / 2)
 	}
-	getActorShape() {
+	getAgentShape() {
 		return this.p
 	}
 	meta() {
@@ -97,27 +97,27 @@ class PersonBehavior extends ActorBehavior {
 class SimpleTaxModel extends Model {
 	constructor(title, N) {
 		super(title)
-		this.actorsNum = N
+		this.agentsNum = N
 
 		var modelLayout = new CircularLayout()
 
-		this.commonResourceActor = new ResourceBehavior()
+		this.commonResourceAgent = new ResourceBehavior()
 
-		modelLayout.setCentralElement(this.commonResourceActor)
+		modelLayout.setCentralElement(this.commonResourceAgent)
 
 		this.allAgents = {}
 
 		for (var i = 0; i < N; i++) {
-			var a = new PersonBehavior(i, this.commonResourceActor);
+			var a = new PersonBehavior(i, this.commonResourceAgent);
 			this.allAgents[a.id] = a
 			modelLayout.addRadialElement(a)
 		}
-		this.allAgents[this.commonResourceActor.id] = this.commonResourceActor
+		this.allAgents[this.commonResourceAgent.id] = this.commonResourceAgent
 
 		this.modelLayout = modelLayout
 	}
 	saveExcess(acceptResources) {
-		this.commonResourceActor.acceptResources = acceptResources
+		this.commonResourceAgent.acceptResources = acceptResources
 		return this
 	}
 

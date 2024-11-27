@@ -43,12 +43,12 @@ export class Engine {
 		this.model = model
 
 		// Reset state
-		this.actorHistory = {}
+		this.agentHistory = {}
 		this.aggregatedHistory = {}
 		this.startTime = Date.now()
 
 		this.tickNo = 0
-		this.selectedActor = null
+		this.selectedAgent = null
 		this.progressEnabled = false
 		this.layout.resetLayout()
 		if (model != undefined) {
@@ -63,20 +63,20 @@ export class Engine {
 		var hit = false
 		var agentId = this.model.getAgentIdAt(x, y)
 		if (agentId != undefined) {
-			this.showActorInfo(agentId)
+			this.showAgentInfo(agentId)
 		} else {
-			this.showActorInfo("aggregated")
+			this.showAgentInfo("aggregated")
 		}
 	}
 
-	showActorInfo(agentId) {
+	showAgentInfo(agentId) {
 		console.log(`Showing history for #${agentId}`)
 		if (!this.model.hasAgent(agentId)) {
 			return
 		}
-		var actorHistory = this.actorHistory[agentId]
-		if (this.selectedActor != agentId) {
-			// Display actor parameters
+		var agentHistory = this.agentHistory[agentId]
+		if (this.selectedAgent != agentId) {
+			// Display agent parameters
 			var properties = this.model.getAgentMeta(agentId)
 				.map(e => {
 					return {
@@ -89,8 +89,8 @@ export class Engine {
 
 			var chartOptionsArray = []
 
-			if (actorHistory != undefined && actorHistory.length > 0) {
-				for (var midx = 0; midx < actorHistory[0].length; midx++) {// Iterate over metrices
+			if (agentHistory != undefined && agentHistory.length > 0) {
+				for (var midx = 0; midx < agentHistory[0].length; midx++) {// Iterate over metrices
 					var maxValue = this.model.getStateValueLimits(agentId)[midx]?.max
 					var chartTitle = this.model.getStateHeaders(agentId)[midx]
 					var chartOptions = {
@@ -129,13 +129,13 @@ export class Engine {
 				}
 				this.layout.setCharts(chartOptionsArray)
 
-				this.selectedActor = agentId
+				this.selectedAgent = agentId
 			}
 
 		}
 
-		if (actorHistory != undefined) {
-			this.layout.updateCharts(actorHistory)
+		if (agentHistory != undefined) {
+			this.layout.updateCharts(agentHistory)
 		}
 
 	}
@@ -160,7 +160,7 @@ export class Engine {
 
 		this.tick()
 		var agentId = this.model.getAllAgents()[0].id
-		this.showActorInfo(agentId)
+		this.showAgentInfo(agentId)
 
 		return this
 	}
@@ -195,10 +195,10 @@ export class Engine {
 	}
 
 	cleanHistory() {
-		this.actorHistory = {}
+		this.agentHistory = {}
 		this.aggregatedHistory = {}
 		this.tickNo = 1
-		this.showActorInfo(this.selectedActor)
+		this.showAgentInfo(this.selectedAgent)
 		this.model.cleanStates()
 	}
 	tick() {
@@ -212,10 +212,10 @@ export class Engine {
 				// Save agents history
 				let statesMap = this.model.getAgentStates()
 				for (var id in statesMap) {
-					if (this.actorHistory[id] == undefined) {
-						this.actorHistory[id] = []
+					if (this.agentHistory[id] == undefined) {
+						this.agentHistory[id] = []
 					}
-					this.actorHistory[id].push(statesMap[id])
+					this.agentHistory[id].push(statesMap[id])
 				}
 
 				// Save aggregated history
@@ -231,7 +231,7 @@ export class Engine {
 				// }
 
 				this.tickNo++
-				this.showActorInfo(this.selectedActor)
+				this.showAgentInfo(this.selectedAgent)
 			}
 		}
 	}

@@ -1,4 +1,4 @@
-import { ActorBehavior, ActorShape, AggregatedStateBehavior } from './actor.js'
+import { AgentBehavior, AgentShape, AggregatedStateBehavior } from './agent.js'
 import { Model } from './models.js'
 import { Engine } from './engine.js'
 import { PageLayoutManager } from './page-layout'
@@ -39,15 +39,15 @@ class WorkerLayout {
 	}
 	draw(c) {
 		this.topics.forEach(a => {
-			a.getActorShape().draw(c);
+			a.getAgentShape().draw(c);
 		})
 		this.workers.forEach(w => {
-			w.getActorShape().draw(c);
+			w.getAgentShape().draw(c);
 			var intTopics = w.getInterestedTopics()
 			intTopics.forEach(t => {
 
-				var linkStart = w.getActorShape().getEdgePointToNormal(t.getActorShape().x, t.getActorShape().y)
-				var linkEnd = t.getActorShape().getEdgePointToNormal(w.getActorShape().x, w.getActorShape().y)
+				var linkStart = w.getAgentShape().getEdgePointToNormal(t.getAgentShape().x, t.getAgentShape().y)
+				var linkEnd = t.getAgentShape().getEdgePointToNormal(w.getAgentShape().x, w.getAgentShape().y)
 				c.drawLine({
 					strokeStyle: '#000',
 					strokeWidth: 1,
@@ -59,7 +59,7 @@ class WorkerLayout {
 	}
 }
 
-class WorkerBehavior extends ActorBehavior {
+class WorkerBehavior extends AgentBehavior {
 	constructor(idx, totalWorkers, topics) {
 		super()
 		this.idx = idx
@@ -101,7 +101,7 @@ class WorkerBehavior extends ActorBehavior {
 				}
 			}
 		})
-		this.w = new ActorShape()
+		this.w = new AgentShape()
 		this.w.r = 3
 		this.motivation = 0.5
 		this.priority = 0
@@ -136,7 +136,7 @@ class WorkerBehavior extends ActorBehavior {
 	cleanState() {
 		this.motivation = 0.5
 	}
-	getActorShape() { return this.w }
+	getAgentShape() { return this.w }
 
 	getInterestedTopics() {
 		return this.topics.filter(t => t.contributing).map(t => t.topic);
@@ -268,11 +268,11 @@ class WorkerBehavior extends ActorBehavior {
 }
 
 
-class TopicBehavior extends ActorBehavior {
+class TopicBehavior extends AgentBehavior {
 	constructor(idx) {
 		super()
 		this.idx = idx
-		this.t = new ActorShape()
+		this.t = new AgentShape()
 		this.lastTickContribution = 0
 		this.devSpeed = 0
 		this.requiredWorkers = 2
@@ -291,7 +291,7 @@ class TopicBehavior extends ActorBehavior {
 	contribute(contributionRate) {
 		this.lastTickContribution += contributionRate
 	}
-	getActorShape() { return this.t }
+	getAgentShape() { return this.t }
 	meta() {
 		return [
 			["Required workers", this.requiredWorkers],

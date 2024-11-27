@@ -1,34 +1,34 @@
 export class CircularLayout {
 	constructor() {
-		this.perimeterActors = []
-		this.centralActor = null
+		this.perimeterAgents = []
+		this.centralAgent = null
 	}
 	addRadialElement(e) {
-		this.perimeterActors.push(e)
+		this.perimeterAgents.push(e)
 	}
 	setCentralElement(e) {
-		this.centralActor = e
+		this.centralAgent = e
 	}
 	arrange(c) {
-		var adelta = 2 * Math.PI / this.perimeterActors.length
+		var adelta = 2 * Math.PI / this.perimeterAgents.length
 
 		var cX = c.width() / 2
 		var cY = c.height() / 2
 		var agentsR = 100
 
-		for (var i = 0; i < this.perimeterActors.length; i++) {
-			var a = this.perimeterActors[i]
+		for (var i = 0; i < this.perimeterAgents.length; i++) {
+			var a = this.perimeterAgents[i]
 			var alpha = i * adelta
 			a.setPos(Math.cos(alpha) * agentsR + cX,
 				Math.sin(alpha) * agentsR + cY)
 		}
-		this.centralActor.setPos(cX, cY)
+		this.centralAgent.setPos(cX, cY)
 	}
 	draw(c) {
-		this.perimeterActors.forEach(a => {
-			a.getActorShape().draw(c);
+		this.perimeterAgents.forEach(a => {
+			a.getAgentShape().draw(c);
 		})
-		this.centralActor.getActorShape().draw(c)
+		this.centralAgent.getAgentShape().draw(c)
 	}
 }
 

@@ -1,5 +1,5 @@
 
-import { ActorBehavior, ActorShape } from './actor.js'
+import { AgentBehavior, AgentShape } from './agent.js'
 import { Model } from './models.js'
 import { Engine } from './engine.js'
 import { PageLayoutManager } from './page-layout'
@@ -10,7 +10,7 @@ class BlackholeModel extends Model {
 	constructor(title) {
 		super(title)
 		this.agentsCounter = 1
-		this.bh = new BlackholeActor(0)
+		this.bh = new BlackholeAgent(0)
 		this.particles = []
 
 		this.allAgents = [this.bh]
@@ -20,8 +20,8 @@ class BlackholeModel extends Model {
 		var releasedIdxs = []
 		this.bh.detained = 0
 		this.particles.forEach((p, i) => {
-			var px = p.getActorShape().x
-			var py = p.getActorShape().y
+			var px = p.getAgentShape().x
+			var py = p.getAgentShape().y
 			if (px > this.width || py > this.height || px < 0 || py < 0) {
 				releasedIdxs.push(i)
 				this.bh.released++
@@ -46,7 +46,7 @@ class BlackholeModel extends Model {
 		if (this.bh.detained < 10) {
 			// Detain till produce new particles till amount of detained is below threshold
 			if (tIdx % 10 == 0) {
-				var p = new ParticleActor(this.agentsCounter++, this.bh)
+				var p = new ParticleAgent(this.agentsCounter++, this.bh)
 				p.setPos(this.width / 2, this.height / 2 - 15)
 				this.particles.push(p)
 				this.bh.newParticle()
@@ -74,16 +74,16 @@ class BlackholeModel extends Model {
 		return ""
 	}
 	draw(c) {
-		this.particles.forEach(p => p.getActorShape().draw(c))
-		this.bh.getActorShape().draw(c)
+		this.particles.forEach(p => p.getAgentShape().draw(c))
+		this.bh.getAgentShape().draw(c)
 	}
 }
 
-class BlackholeActor extends ActorBehavior {
+class BlackholeAgent extends AgentBehavior {
 	constructor(id) {
 		super()
 		this.id = id
-		this.shape = new ActorShape()
+		this.shape = new AgentShape()
 		this.shape.color = 'black'
 		this.particlesNo++
 		this.released = 0
@@ -94,7 +94,7 @@ class BlackholeActor extends ActorBehavior {
 		return this.mass
 	}
 
-	getActorShape() {
+	getAgentShape() {
 		return this.shape
 	}
 
@@ -114,11 +114,11 @@ class BlackholeActor extends ActorBehavior {
 	}
 }
 
-class ParticleActor extends ActorBehavior {
+class ParticleAgent extends AgentBehavior {
 	constructor(id, mass) {
 		super()
 		this.id = id
-		this.shape = new ActorShape()
+		this.shape = new AgentShape()
 		this.shape.r = 1
 		this.sin = 0
 		this.cos = 1
@@ -127,10 +127,10 @@ class ParticleActor extends ActorBehavior {
 	}
 
 	action() {
-		var mX = this.mass.getActorShape().x
-		var mY = this.mass.getActorShape().y
-		var pX = this.getActorShape().x
-		var pY = this.getActorShape().y
+		var mX = this.mass.getAgentShape().x
+		var mY = this.mass.getAgentShape().y
+		var pX = this.getAgentShape().x
+		var pY = this.getAgentShape().y
 		var h = Math.sqrt(Math.pow(mX - pX, 2) + Math.pow(mY - pY, 2))
 		var cosG = (mX - pX) / h
 		var sinG = (mY - pY) / h
@@ -150,12 +150,12 @@ class ParticleActor extends ActorBehavior {
 
 		this.impulse = rH
 
-		this.getActorShape().setPos(
+		this.getAgentShape().setPos(
 			pX + this.impulse * this.cos,
 			pY + this.impulse * this.sin)
 
 	}
-	getActorShape() {
+	getAgentShape() {
 		return this.shape
 	}
 }

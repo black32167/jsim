@@ -159,8 +159,11 @@ export class Engine {
 		//this.interval = setInterval(() => { this.tick() }, this.tickDelay)
 
 		this.tick()
-		var agentId = this.model.getAllAgents()[0].id
-		this.showAgentInfo(agentId)
+		let allAgents = this.model.getAllAgents()
+		if (allAgents.length > 0) {
+			let agentId = allAgents[0].id
+			this.showAgentInfo(agentId)
+		}
 
 		return this
 	}

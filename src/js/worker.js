@@ -18,21 +18,21 @@ class WorkerLayout {
 		this.topics.push(e)
 	}
 	arrange(c) {
-		var topicsY = 50
-		var workersY = c.height() - 50
+		let topicsY = 50
+		let workersY = c.height() - 50
 
 		// Arrange topics
-		var topicsNum = this.topics.length
+		let topicsNum = this.topics.length
 		this.topics.forEach((a, i) => {
-			var step = (c.width() - 10) / topicsNum
+			let step = (c.width() - 10) / topicsNum
 			a.setPos(step * (i + 0.5) + 5,
 				topicsY)
 		})
 
 		// Arrange workers
-		var workersNum = this.workers.length
+		let workersNum = this.workers.length
 		this.workers.forEach((a, i) => {
-			var step = (c.width() - 10) / workersNum
+			let step = (c.width() - 10) / workersNum
 			a.setPos(step * (i + 0.5) + 5,
 				workersY)
 		})
@@ -43,11 +43,12 @@ class WorkerLayout {
 		})
 		this.workers.forEach(w => {
 			w.getAgentShape().draw(c);
-			var intTopics = w.getInterestedTopics()
-			intTopics.forEach(t => {
-
-				var linkStart = w.getAgentShape().getEdgePointToNormal(t.getAgentShape().x, t.getAgentShape().y)
-				var linkEnd = t.getAgentShape().getEdgePointToNormal(w.getAgentShape().x, w.getAgentShape().y)
+			let contributedTopics = w.getContributedTopics()
+			contributedTopics.forEach(t => {
+				let topicShape = t.getAgentShape()
+				let workerShape = w.getAgentShape()
+				let linkStart = workerShape.getEdgePointToNormal(topicShape.x, topicShape.y)
+				let linkEnd = topicShape.getEdgePointToNormal(workerShape.x, workerShape.y)
 				c.drawLine({
 					strokeStyle: '#000',
 					strokeWidth: 1,
@@ -66,7 +67,7 @@ class WorkerBehavior extends AgentBehavior {
 		this.totalWorkers = totalWorkers
 		this.maxCompulsoryTopics = 1
 		this.maxOptionalTopics = 0
-		this.retention = 20
+		this.retention = 20 // How many ticks worker is assigned to the particular project
 		this.retentionTicks = 0
 		this.prificiencyDecayRate = 0.95
 		this.proficiencyDevelopingRate = 1.2
@@ -74,7 +75,6 @@ class WorkerBehavior extends AgentBehavior {
 		this.fatigueSimulation = false
 		this.seekMandatoryExperience = false
 
-		var _this = this
 		this.topics = topics.map(t => {
 			return {
 				topic: t,
@@ -102,9 +102,9 @@ class WorkerBehavior extends AgentBehavior {
 			}
 		})
 		this.w = new AgentShape()
-		this.w.r = 3
+		this.w.r = 8
 		this.motivation = 0.5
-		this.priority = 0
+		this.priorityChangeTick = 0
 		this.workForce = 1
 	}
 	updateOpts(opts) {
@@ -115,15 +115,15 @@ class WorkerBehavior extends AgentBehavior {
 	}
 
 	meta() {
-		var meta = []
+		let meta = []
 		this.topics.forEach((t, i) => {
 			meta.push(["Topic #" + i + " interest", Math.round10(t.interest)])
 		})
 		return meta
 	}
 	stateHeaders() {
-		var headers = ["Overall Motivation"]
-		for (var i = 0; i < this.topics.length; i++) {
+		let headers = ["Overall Motivation"]
+		for (let i = 0; i < this.topics.length; i++) {
 			headers.push("Skill in topic #" + i)
 		}
 		return headers
@@ -132,7 +132,7 @@ class WorkerBehavior extends AgentBehavior {
 		return Array(this.stateHeaders().length).fill({max:1.0})
 	}
 	state() {
-		var stateValues = [this.motivation]
+		let stateValues = [this.motivation]
 		this.topics.forEach(t => stateValues.push(Math.round10(t.proficiency)))
 		return stateValues
 	}
@@ -141,7 +141,7 @@ class WorkerBehavior extends AgentBehavior {
 	}
 	getAgentShape() { return this.w }
 
-	getInterestedTopics() {
+	getContributedTopics() {
 		return this.topics.filter(t => t.contributing).map(t => t.topic);
 	}
 
@@ -149,7 +149,7 @@ class WorkerBehavior extends AgentBehavior {
 		//this.priority = 0
 		this.currentTick = tIdx
 
-		var contibutingTopics = this.topics.filter(t => t.contributing)
+		let contibutingTopics = this.topics.filter(t => t.contributing)
 		contibutingTopics.forEach(t => t.abjure())
 
 		//console.log("Stop contributing :" + this.idx)
@@ -157,8 +157,8 @@ class WorkerBehavior extends AgentBehavior {
 		if (this.synchronousSwitchover) {
 
 			if (this.retentionTicks == 0) {
-				this.priority = tIdx
-				//console.log("priority = " + this.priority + ", idx = " + this.idx)
+				this.priorityChangeTick = tIdx
+				// console.log("priority = " + this.priority + ", idx = " + this.idx)
 			}
 			if (this.retentionTicks > this.retention) {
 				this.retentionTicks = 0
@@ -168,7 +168,8 @@ class WorkerBehavior extends AgentBehavior {
 
 		} else {
 			if (tIdx % this.totalWorkers == this.idx) {
-				this.priority = tIdx
+				this.priorityChangeTick = tIdx
+				console.log("priority = " + this.priorityChangeTick + ", idx = " + this.idx)
 			}
 		}
 	}
@@ -178,9 +179,9 @@ class WorkerBehavior extends AgentBehavior {
 
 		// Contribute to at least one topic which requires workforce
 		this.assign(this.maxCompulsoryTopics, (t1, t2) => {
-			var deficit1 = t1.topic.requiredWorkers - t1.topic.workers
-			var deficit2 = t2.topic.requiredWorkers - t2.topic.workers
-			var c = -this.compareNums(deficit1, deficit2)
+			let deficit1 = t1.topic.requiredWorkers - t1.topic.workers
+			let deficit2 = t2.topic.requiredWorkers - t2.topic.workers
+			let c = -this.compareNums(deficit1, deficit2)
 			if (c == 0) {
 				//!!! return -this.compareByInterestAsc(t1, t2)
 				return this.compareNums(t1.lastChangedTick, t2.lastChangedTick)
@@ -193,8 +194,8 @@ class WorkerBehavior extends AgentBehavior {
 
 
 		// Update proficiency/fatigue in all topics
-		var currentContibutingTopics = this.topics.filter(t => t.contributing)
-		var maxInterest = currentContibutingTopics.map(t => t.interest).reduce((a, b) => Math.max(a, b))
+		let currentContibutingTopics = this.topics.filter(t => t.contributing)
+		let maxInterest = currentContibutingTopics.map(t => t.interest).reduce((a, b) => Math.max(a, b))
 		this.topics.forEach(t => {
 			t.proficiency = this.sigmoid(t.ticks / 3 - 1.5) * t.interest // Proficiency depends on interest
 
@@ -207,11 +208,11 @@ class WorkerBehavior extends AgentBehavior {
 		this.motivation = 0
 
 		currentContibutingTopics.forEach((t, i) => {
-			if (this.priority == this.currentTick) {
-				if (t.lastContributedTick < this.currentTick) {
+			if (this.priorityChangeTick == this.currentTick) {
+				//if (t.lastContributedTick < this.currentTick) {
 					// console.log("Topic #" + i + " has changed, priority = " + this.priority + ", tick=" + this.currentTick + ", lastCT = " + t.lastContributedTick)
 					t.lastChangedTick = this.currentTick
-				}
+				//}
 			}
 
 			t.ticks++
@@ -225,7 +226,7 @@ class WorkerBehavior extends AgentBehavior {
 		this.w.setColor('rgba(0,0,255,' + this.motivation + ')')
 
 		// Update dormant topics
-		var currentNonContibutingTopics = this.topics.filter(t => !t.contributing)
+		let currentNonContibutingTopics = this.topics.filter(t => !t.contributing)
 		currentNonContibutingTopics.forEach(t => {
 			if (t.ticks > 0) t.ticks--
 		})
@@ -235,16 +236,16 @@ class WorkerBehavior extends AgentBehavior {
 	}
 
 	sigmoid(x) {
-		var ex = Math.pow(2.718, x)
+		let ex = Math.pow(2.718, x)
 		return ex / (ex + 1)
 	}
 
 	assign(maxAssinments, comparator) {
-		var unassignedTopics = this.topics.filter(t => !t.contributing)
+		let unassignedTopics = this.topics.filter(t => !t.contributing)
 		unassignedTopics.sort(comparator)
 
-		var count = Math.max(maxAssinments - this.topics.filter(t => t.contributing).length, 0)
-		for (var i = 0; i < Math.min(count, unassignedTopics.length); i++) {
+		let count = Math.max(maxAssinments - this.topics.filter(t => t.contributing).length, 0)
+		for (let i = 0; i < Math.min(count, unassignedTopics.length); i++) {
 			unassignedTopics[i].contribute()
 		}
 
@@ -314,10 +315,10 @@ class TopicBehavior extends AgentBehavior {
 	postAction() {
 		this.devSpeed = this.lastTickContribution
 		this.lastTickContribution = 0
-		var interests = this.workersArr.map(w => w.getInterestIn(this.idx))
+		let interests = this.workersArr.map(w => w.getInterestIn(this.idx))
 		this.avgInterestRate = interests.reduce((p, c) => p + c, 0) / this.workersArr.length
 		this.deviation = Math.sqrt(interests.reduce((p, c) => p + Math.pow(c - this.avgInterestRate, 2), 0) / this.workersArr.length)
-		var intens = Math.round(255 * this.avgInterestRate)
+		let intens = Math.round(255 * this.avgInterestRate)
 		this.t.setColor('rgba(100,' + intens + ',0, 1)')
 	}
 	updateOpts(opts) {
@@ -329,19 +330,19 @@ class DynamicCollaborationModel extends Model {
 	constructor(title, wN, tN) {
 		super(title)
 
-		var layout = new WorkerLayout()
+		let layout = new WorkerLayout()
 
-		var topics = []
-		for (var i = 0; i < tN; i++) {
-			var tb = new TopicBehavior(i)
+		let topics = []
+		for (let i = 0; i < tN; i++) {
+			let tb = new TopicBehavior(i)
 
 			topics.push(tb)
 			layout.addTopic(tb)
 		}
 
-		var workers = []
-		for (var i = 0; i < wN; i++) {
-			var a = new WorkerBehavior(i, wN, topics);
+		let workers = []
+		for (let i = 0; i < wN; i++) {
+			let a = new WorkerBehavior(i, wN, topics);
 
 			workers.push(a)
 			layout.addWorker(a)
@@ -403,7 +404,7 @@ class DynamicCollaborationModel extends Model {
 	}
 }
 
-var parameters = [
+let parameters = [
 	{
 		title: "Humans, 1c, noswitch",
 		description: "Number of employees work on some forcibly assigned topics permanently. ",
@@ -426,7 +427,7 @@ var parameters = [
 			"From time to time employees are forced to switch between compulsory topics. ",
 		workersCount: 30,
 		topicsCount: 5,
-		workerOptions: { retention: 20, maxCompulsoryTopics: 1, fatigueSimulation: true, maxOptionalTopics: 1, synchronousSwitchover: false },
+		workerOptions: { retention: 50, maxCompulsoryTopics: 2, fatigueSimulation: true, maxOptionalTopics: 1, synchronousSwitchover: false },
 		topicOptions: { requiredWorkers: 6 }
 	}
 ]
@@ -436,7 +437,7 @@ $(function () {
 		.onReset(updateModel)
 	let engine = new Engine(layout)
 
-	var preset = new PresetControl(
+	let preset = new PresetControl(
 		'#modelSelector',
 		parameters
 	)

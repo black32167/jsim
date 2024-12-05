@@ -86,7 +86,7 @@ class WorkerBehavior extends AgentBehavior {
 				lastContributedTick: 0,
 				lastChangedTick: 0,
 
-				contribute: function () {
+				assign: function () {
 					if (this.contributing) {
 						throw "Already contributing!"
 					}
@@ -104,7 +104,7 @@ class WorkerBehavior extends AgentBehavior {
 		this.w = new AgentShape()
 		this.w.r = 8
 		this.motivation = 0.5
-		this.priorityChangeTick = 0
+		this.shouldChangePriority = false
 		this.workForce = 1
 	}
 	updateOpts(opts) {
@@ -157,7 +157,7 @@ class WorkerBehavior extends AgentBehavior {
 		if (this.synchronousSwitchover) {
 
 			if (this.retentionTicks == 0) {
-				this.priorityChangeTick = tIdx
+				this.shouldChangePriority = true
 				// console.log("priority = " + this.priority + ", idx = " + this.idx)
 			}
 			if (this.retentionTicks > this.retention) {
@@ -168,8 +168,8 @@ class WorkerBehavior extends AgentBehavior {
 
 		} else {
 			if (tIdx % this.totalWorkers == this.idx) {
-				this.priorityChangeTick = tIdx
-				console.log("priority = " + this.priorityChangeTick + ", idx = " + this.idx)
+				this.shouldChangePriority = true
+				console.log("shouldChangePriority = " + this.shouldChangePriority + ", idx = " + this.idx)
 			}
 		}
 	}
@@ -178,24 +178,15 @@ class WorkerBehavior extends AgentBehavior {
 
 
 		// Contribute to at least one topic which requires workforce
-		this.assign(this.maxCompulsoryTopics, (t1, t2) => {
-			let deficit1 = t1.topic.requiredWorkers - t1.topic.workers
-			let deficit2 = t2.topic.requiredWorkers - t2.topic.workers
-			let c = -this.compareNums(deficit1, deficit2)
-			if (c == 0) {
-				//!!! return -this.compareByInterestAsc(t1, t2)
-				return this.compareNums(t1.lastChangedTick, t2.lastChangedTick)
-			}
-			return c
-		})
+		this.assign(this.maxCompulsoryTopics, (t1, t2) => this.compareByRequiredWorkers(t1, t2))
 
 		// Contribute to all other interesting topics
-		this.assign(this.maxOptionalTopics + this.maxCompulsoryTopics, (t1, t2) => -this.compareByInterestAsc(t1, t2))
+		this.assign(this.maxOptionalTopics, (t1, t2) => -this.compareByInterestAsc(t1, t2))
 
 
-		// Update proficiency/fatigue in all topics
-		let currentContibutingTopics = this.topics.filter(t => t.contributing)
-		let maxInterest = currentContibutingTopics.map(t => t.interest).reduce((a, b) => Math.max(a, b))
+		// Update proficiency/fatigue in all contributing topics
+		let currentContibutingTopicDescriptors = this.topics.filter(t => t.contributing)
+		let maxInterest = currentContibutingTopicDescriptors.map(t => t.interest).reduce((a, b) => Math.max(a, b))
 		this.topics.forEach(t => {
 			t.proficiency = this.sigmoid(t.ticks / 3 - 1.5) * t.interest // Proficiency depends on interest
 
@@ -207,8 +198,8 @@ class WorkerBehavior extends AgentBehavior {
 		// Update topics being contributed
 		this.motivation = 0
 
-		currentContibutingTopics.forEach((t, i) => {
-			if (this.priorityChangeTick == this.currentTick) {
+		currentContibutingTopicDescriptors.forEach((t, i) => {
+			if (this.shouldChangePriority) {
 				//if (t.lastContributedTick < this.currentTick) {
 					// console.log("Topic #" + i + " has changed, priority = " + this.priority + ", tick=" + this.currentTick + ", lastCT = " + t.lastContributedTick)
 					t.lastChangedTick = this.currentTick
@@ -220,9 +211,9 @@ class WorkerBehavior extends AgentBehavior {
 			t.lastContributedTick = tIdx;
 
 			this.motivation += t.interest * (1 - t.fatigue)
-			t.topic.contribute(t.interest * (1 - t.fatigue) * t.proficiency / currentContibutingTopics.length)
+			t.topic.contribute(t.interest * (1 - t.fatigue) * t.proficiency / currentContibutingTopicDescriptors.length)
 		});
-		this.motivation /= currentContibutingTopics.length
+		this.motivation /= currentContibutingTopicDescriptors.length
 		this.w.setColor('rgba(0,0,255,' + this.motivation + ')')
 
 		// Update dormant topics
@@ -230,8 +221,7 @@ class WorkerBehavior extends AgentBehavior {
 		currentNonContibutingTopics.forEach(t => {
 			if (t.ticks > 0) t.ticks--
 		})
-
-
+		this.shouldChangePriority = false
 
 	}
 
@@ -244,9 +234,9 @@ class WorkerBehavior extends AgentBehavior {
 		let unassignedTopics = this.topics.filter(t => !t.contributing)
 		unassignedTopics.sort(comparator)
 
-		let count = Math.max(maxAssinments - this.topics.filter(t => t.contributing).length, 0)
+		let count = Math.max(maxAssinments, 0)
 		for (let i = 0; i < Math.min(count, unassignedTopics.length); i++) {
-			unassignedTopics[i].contribute()
+			unassignedTopics[i].assign()
 		}
 
 	}
@@ -266,6 +256,18 @@ class WorkerBehavior extends AgentBehavior {
 	compareByInterestAsc(t1, t2) {
 		return this.compareNums(t1.interest, t2.interest)
 	}
+
+	compareByRequiredWorkers(t1, t2) {
+		let deficit1 = t1.topic.requiredWorkers - t1.topic.workers
+		let deficit2 = t2.topic.requiredWorkers - t2.topic.workers
+		let c = -this.compareNums(deficit1, deficit2)
+		if (c == 0) {
+			//!!! return -this.compareByInterestAsc(t1, t2)
+			return this.compareNums(t1.lastChangedTick, t2.lastChangedTick)
+		}
+		return c
+	}
+
 	getInterestIn(topicIdx) {
 		return this.topics[topicIdx].interest
 	}

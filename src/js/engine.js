@@ -60,8 +60,7 @@ export class Engine {
 
 
 	trackMouse(x, y) {
-		var hit = false
-		var agentId = this.model.getAgentIdAt(x, y)
+		const agentId = this.model.getAgentIdAt(x, y)
 		if (agentId != undefined) {
 			this.showAgentInfo(agentId)
 		} else {
@@ -70,7 +69,6 @@ export class Engine {
 	}
 
 	showAgentInfo(agentId) {
-		console.log(`Showing history for #${agentId}`)
 		if (!this.model.hasAgent(agentId)) {
 			return
 		}

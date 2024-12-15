@@ -67,8 +67,8 @@ class WorkerBehavior extends AgentBehavior {
 		this.totalWorkers = totalWorkers
 		this.maxCompulsoryTopics = 1
 		this.maxOptionalTopics = 0
-		this.retention = 20 // How many ticks worker is assigned to the particular project
-		this.retentionTicks = 0
+		this.retentionTicks = 20 // How many ticks worker is assigned to the particular project
+		this.currentRetentionTicks = 0
 		this.prificiencyDecayRate = 0.95
 		this.proficiencyDevelopingRate = 1.2
 		this.synchronousSwitchover = true
@@ -114,7 +114,7 @@ class WorkerBehavior extends AgentBehavior {
 		this.topics.forEach(updateFunc)
 	}
 
-	meta() {
+	describe() {
 		let meta = []
 		this.topics.forEach((t, i) => {
 			meta.push(["Topic #" + i + " interest", Math.round10(t.interest)])
@@ -129,7 +129,7 @@ class WorkerBehavior extends AgentBehavior {
 		return headers
 	}
 	getValueLimits() {
-		return Array(this.stateHeaders().length).fill({max:1.0})
+		return Array(this.stateHeaders().length).fill({ max: 1.0 })
 	}
 	state() {
 		let stateValues = [this.motivation]
@@ -149,27 +149,21 @@ class WorkerBehavior extends AgentBehavior {
 		//this.priority = 0
 		this.currentTick = tIdx
 
-		let contibutingTopics = this.topics.filter(t => t.contributing)
-		contibutingTopics.forEach(t => t.abjure())
+		// Abjure all the topics
+		let contibutingTopics = this.topics.forEach(t => t.abjure())
 
 		//console.log("Stop contributing :" + this.idx)
-
-		if (this.synchronousSwitchover) {
-
-			if (this.retentionTicks == 0) {
+		this.currentRetentionTicks++
+		if (this.currentRetentionTicks > this.retentionTicks) {
+			this.currentRetentionTicks = 0
+			if (this.synchronousSwitchover) {
 				this.shouldChangePriority = true
-				// console.log("priority = " + this.priority + ", idx = " + this.idx)
-			}
-			if (this.retentionTicks > this.retention) {
-				this.retentionTicks = 0
 			} else {
-				this.retentionTicks++
-			}
-
-		} else {
-			if (tIdx % this.totalWorkers == this.idx) {
-				this.shouldChangePriority = true
-				console.log("shouldChangePriority = " + this.shouldChangePriority + ", idx = " + this.idx)
+				// One-by-one switchover
+				if (Math.floor(tIdx / this.retentionTicks) % this.totalWorkers == this.idx) {
+					this.shouldChangePriority = true
+					console.log("shouldChangePriority = " + this.shouldChangePriority + ", idx = " + this.idx)
+				}
 			}
 		}
 	}
@@ -188,7 +182,10 @@ class WorkerBehavior extends AgentBehavior {
 		let currentContibutingTopicDescriptors = this.topics.filter(t => t.contributing)
 		let maxInterest = currentContibutingTopicDescriptors.map(t => t.interest).reduce((a, b) => Math.max(a, b))
 		this.topics.forEach(t => {
-			t.proficiency = this.sigmoid(t.ticks / 3 - 1.5) * t.interest // Proficiency depends on interest
+			t.proficiency = this.sigmoid(t.interest * t.ticks / 3 - 3.5)  // Proficiency depends on interest
+			// if (this.id === 27 && t.topic.id === 21) {
+			// 	console.log(`t=${t.topic.id},p=${t.proficiency},i=${t.interest}, tc=${t.ticks}, tick ${tIdx}`)
+			// }
 
 			if (this.fatigueSimulation) {
 				t.fatigue = this.sigmoid(t.ticks / 3 - 1.5) * (1 - (t.interest + maxInterest) / 2) // Fatigue depends on interest
@@ -200,10 +197,8 @@ class WorkerBehavior extends AgentBehavior {
 
 		currentContibutingTopicDescriptors.forEach((t, i) => {
 			if (this.shouldChangePriority) {
-				//if (t.lastContributedTick < this.currentTick) {
-					// console.log("Topic #" + i + " has changed, priority = " + this.priority + ", tick=" + this.currentTick + ", lastCT = " + t.lastContributedTick)
-					t.lastChangedTick = this.currentTick
-				//}
+				// console.log("Topic #" + i + " has changed, priority = " + this.priority + ", tick=" + this.currentTick + ", lastCT = " + t.lastContributedTick)
+				t.lastChangedTick = this.currentTick
 			}
 
 			t.ticks++
@@ -257,6 +252,9 @@ class WorkerBehavior extends AgentBehavior {
 		return this.compareNums(t1.interest, t2.interest)
 	}
 
+	/**
+	 * The ordering topics by workers demand will result in switching of the current worker with the other one.
+	 */
 	compareByRequiredWorkers(t1, t2) {
 		let deficit1 = t1.topic.requiredWorkers - t1.topic.workers
 		let deficit2 = t2.topic.requiredWorkers - t2.topic.workers
@@ -298,7 +296,7 @@ class TopicBehavior extends AgentBehavior {
 		this.lastTickContribution += contributionRate
 	}
 	getAgentShape() { return this.t }
-	meta() {
+	describe() {
 		return [
 			["Required workers", this.requiredWorkers],
 			["Avg. interest", Math.round10(this.avgInterestRate)],
@@ -412,7 +410,7 @@ let parameters = [
 		description: "Number of employees work on some forcibly assigned topics permanently. ",
 		workersCount: 30,
 		topicsCount: 5,
-		workerOptions: { retention: 900, maxCompulsoryTopics: 1, fatigueSimulation: true },
+		workerOptions: { retentionTicks: 900, maxCompulsoryTopics: 1, fatigueSimulation: true },
 		topicOptions: { requiredWorkers: 6 }
 	},
 	{
@@ -420,7 +418,7 @@ let parameters = [
 		description: "Number of employees work on some forcibly assigned topics with <i>synchronously</i> switch between topics periodically. ",
 		workersCount: 30,
 		topicsCount: 5,
-		workerOptions: { retention: 20, maxCompulsoryTopics: 1, fatigueSimulation: true },
+		workerOptions: { retentionTicks: 20, maxCompulsoryTopics: 1, fatigueSimulation: true },
 		topicOptions: { requiredWorkers: 6 }
 	},
 	{
@@ -429,7 +427,7 @@ let parameters = [
 			"From time to time employees are forced to switch between compulsory topics. ",
 		workersCount: 30,
 		topicsCount: 5,
-		workerOptions: { retention: 50, maxCompulsoryTopics: 2, fatigueSimulation: true, maxOptionalTopics: 1, synchronousSwitchover: false },
+		workerOptions: { retentionTicks: 10, maxCompulsoryTopics: 1, fatigueSimulation: true, maxOptionalTopics: 1, synchronousSwitchover: false },
 		topicOptions: { requiredWorkers: 6 }
 	}
 ]
@@ -443,11 +441,16 @@ $(function () {
 		'#modelSelector',
 		parameters
 	)
-	preset.onSelectionChanged(updateModel)
+	preset.onSelectionChanged(() => {
+		$('#input-retention').val(preset.getSelectedParameters().workerOptions.retentionTicks)
+		updateModel()
+	})
 
 	function updateModel() {
 		let selectedModelPrameters = preset.getSelectedParameters()
-		selectedModelPrameters.workersCount = $('#input-maxWorkers').val()
+		selectedModelPrameters.workersCount = parseInt($('#input-maxWorkers').val())
+		selectedModelPrameters.workerOptions.retentionTicks = parseInt($('#input-retention').val())
+
 		let model = new DynamicCollaborationModel(selectedModelPrameters.title, selectedModelPrameters.workersCount, selectedModelPrameters.topicsCount).
 			description(selectedModelPrameters.description).//
 			updateTopicOpts(selectedModelPrameters.topicOptions).//

@@ -31,7 +31,7 @@ export class Model {
 	getAgentMeta(id) {
 		let agentMeta = this.getAgent(id) || (() => { throw `Agent '${id}' was not found` })()
 
-		return agentMeta.meta()
+		return agentMeta.describe()
 	}
 	getAgent(agentId) {
 		return this.getAllAgents()[agentId]

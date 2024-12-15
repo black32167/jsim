@@ -51,7 +51,7 @@ export class AgentBehavior {
 	setPos(x, y) {
 		this.getAgentShape().setPos(x, y)
 	}
-	meta() {
+	describe() {
 		return []
 	}
 	preAction(tickNo) {
@@ -60,12 +60,38 @@ export class AgentBehavior {
 	}
 	postAction(tickNo) {
 	}
+
+	/**
+	 * [
+	 *   {
+	 *     "title": "Metric title",
+	 *     "key": "metric_key",
+	 *     "value":0.98
+	 *   },
+	 * ...
+	 * ]
+	 */
+	getMetrics() {
+
+	}
+
+	/**
+	 * @deprecated
+	 */
 	stateHeaders() {
 		return []
 	}
+
+	/**
+	 * @deprecated
+	 */
 	getValueLimits() {
 		return []
 	}
+
+	/**
+	 * @deprecated
+	 */
 	state() {
 		return []
 	}
@@ -83,28 +109,36 @@ export class AggregatedStateBehavior extends AgentBehavior {
 			return []
 		}
 
-		return [... agents[0].stateHeaders()]
+		return [...agents[0].stateHeaders()]
 	}
 	getValueLimits() {
 		let agents = Object.values(this.agentsToAggregate)
 		if (agents.length == 0) {
 			return []
 		}
-		return [... agents[0].getValueLimits()]
+		return [...agents[0].getValueLimits()]
 	}
 	state() {
 		const agents = Object.values(this.agentsToAggregate)
-
-		const aggregatedMetrics = Array(this.stateHeaders().length).fill(0)
-		const aggregatedMetricsCount = [... aggregatedMetrics]
-		for(const agent of agents) {
+		const headers = this.stateHeaders()
+		const aggregatedMetrics = Array(headers.length).fill(0)
+		const aggregatedMetricsCount = [...aggregatedMetrics]
+		for (const agent of agents) {
 			agent.state().forEach((metricValue, metricIdx) => {
-				aggregatedMetrics[metricIdx] += metricValue
-				aggregatedMetricsCount[metricIdx] ++
+				if (headers[metricIdx] === "Overall Motivation") { //FIXME: ad-hoc hack
+					aggregatedMetrics[metricIdx] += metricValue
+					aggregatedMetricsCount[metricIdx]++
+				} else {
+					aggregatedMetrics[metricIdx] = Math.max(aggregatedMetrics[metricIdx], metricValue)
+					aggregatedMetricsCount[metricIdx]++
+				}
 			})
 		}
-		for(const idx in aggregatedMetrics) {
-			aggregatedMetrics[idx] /= aggregatedMetricsCount[idx]
+
+		for (const idx in aggregatedMetrics) {
+			if (headers[idx] === "Overall Motivation") {
+				aggregatedMetrics[idx] /= aggregatedMetricsCount[idx]
+			}
 		}
 		return aggregatedMetrics
 	}

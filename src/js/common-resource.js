@@ -11,7 +11,7 @@ export class ResourceBehavior extends AgentBehavior {
 	getAgentShape() {
 		return this.r
 	}
-	meta() {
+	describe() {
 		return []
 	}
 	stateHeaders() {

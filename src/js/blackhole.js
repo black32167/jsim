@@ -101,7 +101,7 @@ class BlackholeAgent extends AgentBehavior {
 	newParticle() {
 		this.particlesNo++
 	}
-	meta() {
+	describe() {
 		return []
 	}
 	stateHeaders() {

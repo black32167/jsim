@@ -30,7 +30,7 @@ class PersonBehavior extends AgentBehavior {
 	getAgentShape() {
 		return this.p
 	}
-	meta() {
+	describe() {
 		return [
 			["Consumption", Math.round10(this.wasteRate)],
 			["Production", Math.round10(this.prodRate)]]

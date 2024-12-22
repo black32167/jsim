@@ -5,6 +5,12 @@ import { PageLayoutManager } from './page-layout'
 import $ from 'jquery'
 import 'jcanvas'
 import { PresetControl } from './input-control/preset-control.js'
+import { Metric } from './metrics.js'
+
+/**
+ * @typedef {import('./agent.js').MetricHeader} MetricHeader
+ * @typedef {import('./agent.js').MetricsValue} MetricsValue
+ */
 
 class WorkerLayout {
 	constructor() {
@@ -101,6 +107,18 @@ class WorkerBehavior extends AgentBehavior {
 				}
 			}
 		})
+
+		// Build metric accessors
+		/** @type {Array.<Metric>} */
+		this.metrics = [
+			new Metric("total_motivation", "Total motivation", () => this.motivation)
+				.withMax(1.0)
+		]
+		this.topics.forEach((t, i) => this.metrics.push(
+			new Metric(`topic_skill_${i}`, `Skill in topic #${i}`, () => Math.round10(t.proficiency))
+				.withMax(1.0)
+		))
+
 		this.w = new AgentShape()
 		this.w.r = 8
 		this.motivation = 0.5
@@ -121,24 +139,15 @@ class WorkerBehavior extends AgentBehavior {
 		})
 		return meta
 	}
-	stateHeaders() {
-		let headers = ["Overall Motivation"]
-		for (let i = 0; i < this.topics.length; i++) {
-			headers.push("Skill in topic #" + i)
-		}
-		return headers
+
+	getMetrics() {
+		return this.metrics
 	}
-	getValueLimits() {
-		return Array(this.stateHeaders().length).fill({ max: 1.0 })
-	}
-	state() {
-		let stateValues = [this.motivation]
-		this.topics.forEach(t => stateValues.push(Math.round10(t.proficiency)))
-		return stateValues
-	}
+
 	cleanState() {
 		this.motivation = 0.5
 	}
+
 	getAgentShape() { return this.w }
 
 	getContributedTopics() {
@@ -286,6 +295,10 @@ class TopicBehavior extends AgentBehavior {
 		this.deviation = 0
 		this.debt = 0
 		this.workersArr = []
+		this.metrics = [
+			new Metric("dev_speed", "Development Speed", () => this.devSpeed),
+			new Metric("workers_current", "Current workers", () => this.workers)
+		]
 	}
 	setWorkers(workersArr) {
 		this.workersArr = workersArr
@@ -302,12 +315,11 @@ class TopicBehavior extends AgentBehavior {
 			["Avg. interest", Math.round10(this.avgInterestRate)],
 			["Interest deviation", Math.round10(this.deviation)]]
 	}
-	stateHeaders() {
-		return ["Development Speed", "Current workers"]
+
+	getMetrics() {
+		return this.metrics
 	}
-	state() {
-		return [this.devSpeed, this.workers]
-	}
+
 	cleanState() {
 		this.devSpeed = 0
 		this.workers = 0
@@ -352,12 +364,12 @@ class DynamicCollaborationModel extends Model {
 		this.workers = workers
 		this.aggregatedState = new AggregatedStateBehavior(workers)
 		this.layout = layout
-		this.allAgents = {}
+		this.allAgentsById = {}
 		this.workers
 			.concat(this.topics)
 			.concat([this.aggregatedState])
 			.forEach(a => {
-				this.allAgents[a.id] = a
+				this.allAgentsById[a.id] = a
 			})
 	}
 
@@ -366,8 +378,19 @@ class DynamicCollaborationModel extends Model {
 		this.layout.draw(c)
 	}
 
+	/**
+	 * @param {string} agentId 
+	 * @returns {AgentBehavior}
+	 */
+	getAgent(agentId) {
+		return this.allAgentsById[agentId]
+	}
+
+	/**
+	 * @returns {Array.<AgentBehavior>}
+	 */
 	getAllAgents() {
-		return this.allAgents
+		return Object.values(this.allAgentsById)
 	}
 
 	updateTopicOpts(opts) {

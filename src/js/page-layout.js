@@ -4,6 +4,10 @@ import Chart from 'chart.js/auto'
 export class PageLayoutManager {
     constructor(parent) {
         this.started = false
+
+        /** @type {Object.<string, Chart>} */
+        this.chartByMetricKey = {}
+
         var substructure = $(`
 			<div id="simulation-structure" style="display:none;">
 				<div class="simulation-process">
@@ -123,36 +127,41 @@ export class PageLayoutManager {
 
     setCharts(chartOptionsArray) {
         this.historyContainer.empty()
-        this.charts = []
+
+        this.chartByMetricKey = {}
         chartOptionsArray.forEach((chartOptions) => {
             var id = Math.floor((1 + Math.random()) * 10000)
             var chartDiv = $('<canvas id="chart' + id + '" height="200" class="chart">')
             this.historyContainer.append(chartDiv)
             var chart = new Chart('chart' + id, chartOptions)
 
-            this.charts.push(chart)
+            this.chartByMetricKey[chartOptions.metricKey] = chart
             chart.render();
         })
     }
 
-    updateCharts(chartData) {
-        chartData.forEach((e, midx) => {
-            e.forEach((e1, didx) => {
-                if (this.charts[didx] != undefined) {
-                    var chart = this.charts[didx]
+    /**
+     * 
+     * @param {Object.<string, Array.<number>>} agentMetricsHistoryByMetricKey 
+     */
+    updateCharts(agentMetricsHistoryByMetricKey) {
+        Object.entries(agentMetricsHistoryByMetricKey).forEach(([metricKey, values]) => {
+            values.forEach((val, didx) => {
+                if (this.chartByMetricKey[metricKey] != undefined) {
+                    var chart = this.chartByMetricKey[metricKey]
                     var data = chart.data
 
                     var ds = data.datasets[0]
 
-                    if (midx > data.labels.length - 1) {
+                    if (didx > data.labels.length - 1) {
                         data.labels.push(data.labels.length)
-                        ds.data.push(e1)
+                        ds.data.push(val)
                     }
 
                 }
             })
         });
-        this.charts.forEach(c => c.update())
+        Object.values(this.chartByMetricKey).forEach(c => c.update())
     }
 
     setModelDescription(description) {

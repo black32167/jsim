@@ -1,3 +1,5 @@
+import { Metric } from "./metrics"
+
 export class AgentShape {
 	constructor() {
 		this.r = 10
@@ -41,8 +43,11 @@ export class AgentShape {
 	}
 }
 var nextId = 0
+
+
 export class AgentBehavior {
 	constructor(id) {
+		/** @type {string} */
 		this.id = id || nextId++
 	}
 	getAgentShape() {
@@ -61,87 +66,70 @@ export class AgentBehavior {
 	postAction(tickNo) {
 	}
 
-	/**
-	 * [
-	 *   {
-	 *     "title": "Metric title",
-	 *     "key": "metric_key",
-	 *     "value":0.98
-	 *   },
-	 * ...
-	 * ]
+
+	/** 
+	 * @return {Array.<Metric>} 
 	 */
 	getMetrics() {
 
 	}
-
-	/**
-	 * @deprecated
-	 */
-	stateHeaders() {
-		return []
-	}
-
-	/**
-	 * @deprecated
-	 */
-	getValueLimits() {
-		return []
-	}
-
-	/**
-	 * @deprecated
-	 */
-	state() {
-		return []
-	}
 }
 
 export class AggregatedStateBehavior extends AgentBehavior {
+	/**
+	 * @param {Array.<AgentBehavior>} agentsToAggregate 
+	 */
 	constructor(agentsToAggregate) {
 		super("aggregated")
 		this.agentsToAggregate = agentsToAggregate
 		this.v = 0
-	}
-	stateHeaders() {
-		let agents = Object.values(this.agentsToAggregate)
-		if (agents.length == 0) {
-			return []
-		}
 
-		return [...agents[0].stateHeaders()]
-	}
-	getValueLimits() {
-		let agents = Object.values(this.agentsToAggregate)
-		if (agents.length == 0) {
-			return []
-		}
-		return [...agents[0].getValueLimits()]
-	}
-	state() {
-		const agents = Object.values(this.agentsToAggregate)
-		const headers = this.stateHeaders()
-		const aggregatedMetrics = Array(headers.length).fill(0)
-		const aggregatedMetricsCount = [...aggregatedMetrics]
-		for (const agent of agents) {
-			agent.state().forEach((metricValue, metricIdx) => {
-				if (headers[metricIdx] === "Overall Motivation") { //FIXME: ad-hoc hack
-					aggregatedMetrics[metricIdx] += metricValue
-					aggregatedMetricsCount[metricIdx]++
-				} else {
-					aggregatedMetrics[metricIdx] = Math.max(aggregatedMetrics[metricIdx], metricValue)
-					aggregatedMetricsCount[metricIdx]++
+		/** @type {Object.<string, Metric>} */
+		const aggregatedMetricsByKey = {}
+
+		/** @type {Object.<string, Array.<Metric>>} */
+		const agentMetricsByKey = {}
+		this.agentsToAggregate.forEach(agent => {
+			agent.getMetrics().forEach((agentMetric, metricIdx) => {
+				const key = agentMetric.getKey()
+
+				if (agentMetricsByKey[key] == undefined) {
+					agentMetricsByKey[key] = []
+				}
+				agentMetricsByKey[key].push(agentMetric)
+
+				if (aggregatedMetricsByKey[key] === undefined) {
+					/** @type {function ():number} */
+					let valueSupplier = undefined
+					if (key === 'total_motivation') {
+						valueSupplier = () => {
+							const agentMetricAccessors = agentMetricsByKey[key]
+							agentMetricAccessors
+								.map(m => m.getValue())
+								.reduce((mv1, mv2) => mv1 + mv2) / agentMetricAccessors.length
+						}
+					} else {
+						valueSupplier = () => {
+							agentMetricsByKey[key]
+								.map(m => m.getValue())
+								.reduce((mv1, mv2) => Math.max(mv1, mv2))
+						}
+					}
+					aggregatedMetricsByKey[key] = new Metric(key, agentMetric.getTitle(), valueSupplier)
 				}
 			})
-		}
+		})
 
-		for (const idx in aggregatedMetrics) {
-			if (headers[idx] === "Overall Motivation") {
-				aggregatedMetrics[idx] /= aggregatedMetricsCount[idx]
-			}
-		}
-		return aggregatedMetrics
+
+		/** @type {Array.<Metric>} */
+		this.aggregatedMetrics = Object.values(aggregatedMetricsByKey)
+
 	}
+
+	getMetrics() {
+		return this.aggregatedMetrics
+	}
+
 	action(tickNo) {
 		this.v = Math.min(100, this.v + 1)
 	}

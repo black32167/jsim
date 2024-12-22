@@ -1,3 +1,10 @@
+import { AgentBehavior } from './agent.js'
+import { Metric } from './metrics.js'
+/**
+ * @typedef {import('./agent.js').MetricHeader} MetricHeader
+ * @typedef {import('./agent.js').MetricValue} MetricValue
+ */
+
 export class Model {
 	constructor(title) {
 		this.title = title
@@ -33,34 +40,48 @@ export class Model {
 
 		return agentMeta.describe()
 	}
+
+	/**
+	 * @param {string} agentId 
+	 * @returns {AgentBehavior}
+	 */
 	getAgent(agentId) {
-		return this.getAllAgents()[agentId]
+		throw "getAgent not implemented"
 	}
 
-	hasAgent(id) {
-		return this.getAllAgents()[id] !== undefined
+	/**
+	 * @param {string} agentId 
+	 * @returns {boolean}
+	 */
+	hasAgent(agentId) {
+		return this.getAgent(agentId) !== undefined
 	}
 	// {id, agent}
+
+	/**
+	 * @returns {Array.<AgentBehavior>}
+	 */
 	getAllAgents() {
 		throw "getAllAgents not implemented"
 	}
 
-	getStateHeaders(agentId) {
-		return this.getAgent(agentId).stateHeaders()
+
+	getMetrics(agentId) {
+		return this.getAgent(agentId).getMetrics()
 	}
-	getStateValueLimits(agentId) {
-		return this.getAgent(agentId).getValueLimits()
-	}
+
 	cleanStates() {
 		for (const [id, agent] of Object.entries(this.getAllAgents())) {
 			agent.cleanState()
 		}
 	}
+
 	// TODO: collapse with 'getStateHeaders'?
-	getAgentStates() {
+	getMetricsByAgentId() {
+		/**@type {Object.<string, Array<Metric>>} */
 		var state = {}
 		for (const [id, agent] of Object.entries(this.getAllAgents())) {
-			state[agent.id] = agent.state()
+			state[agent.id] = agent.getMetrics()
 		}
 		return state
 	}

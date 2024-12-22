@@ -1,4 +1,7 @@
 import $ from 'jquery'
+import { Model } from './models'
+import { Metric } from './metrics'
+import { PageLayoutManager } from './page-layout'
 
 Math.round10 = function (a) {
 	return Math.round(a * 1000) / 1000
@@ -8,6 +11,10 @@ export function color(color, text) {
 }
 export class Engine {
 
+	/**
+	 * 
+	 * @param {PageLayoutManager} layout 
+	 */
 	constructor(layout) {
 		this.layout = layout
 
@@ -39,11 +46,16 @@ export class Engine {
 		return this.model
 	}
 
+	/**
+	 * 
+	 * @param {Model} model 
+	 */
 	setModel(model) {
 		this.model = model
 
 		// Reset state
-		this.agentHistory = {}
+		/** @type {Object.<string, Object.<string, Array.<number>>>} */
+		this.agentIdToMetricsHistory = {}
 		this.aggregatedHistory = {}
 		this.startTime = Date.now()
 
@@ -72,10 +84,18 @@ export class Engine {
 		if (!this.model.hasAgent(agentId)) {
 			return
 		}
-		var agentHistory = this.agentHistory[agentId]
+
 		if (this.selectedAgent != agentId) {
 			// Display agent parameters
-			var properties = this.model.getAgentMeta(agentId)
+
+			const agentMetrics = this.model.getMetrics(agentId)
+
+			/** @type {Object.<string, Metric>} */
+			const agentMetricsByKey = agentMetrics.reduce((acc, metric) => {
+				acc[metric.getKey()] = metric
+				return acc
+			}, {})
+			const properties = this.model.getAgentMeta(agentId)
 				.map(e => {
 					return {
 						name: e[0], value: e[1]
@@ -87,55 +107,54 @@ export class Engine {
 
 			var chartOptionsArray = []
 
-			if (agentHistory != undefined && agentHistory.length > 0) {
-				for (var midx = 0; midx < agentHistory[0].length; midx++) {// Iterate over metrices
-					var maxValue = this.model.getStateValueLimits(agentId)[midx]?.max
-					var chartTitle = this.model.getStateHeaders(agentId)[midx]
-					var chartOptions = {
-						type: 'line',
+			agentMetrics.forEach(metric => {// Iterate over metrics
+				var maxValue = metric.getMaxValue()
+				var chartTitle = metric.getTitle()
+				var chartOptions = {
+					type: 'line',
+					metricKey: metric.getKey(),
 
-						data: {
-							labels: [],
-							datasets: [{
-								label: chartTitle,
-								data: [],
-								backgroundColor: [],
-								fill: false,
-								borderColor: 'rgba(255, 0, 0, 1)',
-								lineTension: 0,
-								pointRadius: 0,
-								borderWidth: 3
-							}]
+					data: {
+						labels: [],
+						datasets: [{
+							label: chartTitle,
+							data: [],
+							backgroundColor: [],
+							fill: false,
+							borderColor: 'rgba(255, 0, 0, 1)',
+							lineTension: 0,
+							pointRadius: 0,
+							borderWidth: 3
+						}]
+					},
+					options: {
+						animation: {
+							duration: 0, // general animation time
 						},
-						options: {
-							animation: {
-								duration: 0, // general animation time
-							},
-							hover: {
-								animationDuration: 0, // duration of animations when hovering an item
-							},
-							responsiveAnimationDuration: 0,
-							scales: {
-								y: {
-									beginAtZero: true,
-									max: maxValue
-								}
+						hover: {
+							animationDuration: 0, // duration of animations when hovering an item
+						},
+						responsiveAnimationDuration: 0,
+						scales: {
+							y: {
+								beginAtZero: true,
+								max: maxValue
 							}
 						}
 					}
-					chartOptionsArray.push(chartOptions)
 				}
+				chartOptionsArray.push(chartOptions)
+
 				this.layout.setCharts(chartOptionsArray)
 
 				this.selectedAgent = agentId
-			}
-
+			})
 		}
 
-		if (agentHistory != undefined) {
-			this.layout.updateCharts(agentHistory)
+		var agentMetricsHistoryByMetricKey = this.agentIdToMetricsHistory[agentId]
+		if (agentMetricsHistoryByMetricKey != undefined) {
+			this.layout.updateCharts(agentMetricsHistoryByMetricKey)
 		}
-
 	}
 
 	stop() {
@@ -196,7 +215,7 @@ export class Engine {
 	}
 
 	cleanHistory() {
-		this.agentHistory = {}
+		this.agentIdToMetricsHistory = {}
 		this.aggregatedHistory = {}
 		this.tickNo = 1
 		this.showAgentInfo(this.selectedAgent)
@@ -211,13 +230,20 @@ export class Engine {
 				this.model.tick(this.tickNo)
 
 				// Save agents history
-				let statesMap = this.model.getAgentStates()
-				for (var id in statesMap) {
-					if (this.agentHistory[id] == undefined) {
-						this.agentHistory[id] = []
+				this.model.getAllAgents().forEach(agent => {
+					const agentId = agent.id
+					const agentMetrics = agent.getMetrics()
+					if (this.agentIdToMetricsHistory[agentId] == undefined) {
+						this.agentIdToMetricsHistory[agentId] = {}
 					}
-					this.agentHistory[id].push(statesMap[id])
-				}
+
+					agentMetrics.forEach(metric => {
+						if (this.agentIdToMetricsHistory[agentId][metric.getKey()] == undefined) {
+							this.agentIdToMetricsHistory[agentId][metric.getKey()] = []
+						}
+						this.agentIdToMetricsHistory[agentId][metric.getKey()].push(metric.getValue())
+					})
+				})
 
 				// Save aggregated history
 				// [{header:"Consumption", value:0}]

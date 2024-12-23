@@ -6,6 +6,7 @@ import $ from 'jquery'
 import 'jcanvas'
 import { PresetControl } from './input-control/preset-control.js'
 import { Metric } from './metrics.js'
+import { to } from 'mathjs'
 
 /**
  * @typedef {import('./agent.js').MetricHeader} MetricHeader
@@ -215,7 +216,10 @@ class WorkerBehavior extends AgentBehavior {
 			t.lastContributedTick = tIdx;
 
 			this.motivation += t.interest * (1 - t.fatigue)
-			t.topic.contribute(t.interest * (1 - t.fatigue) * t.proficiency / currentContibutingTopicDescriptors.length)
+
+			/** @type {TopicBehavior} */
+			const topic = t.topic
+			topic.contribute(t.interest * (1 - t.fatigue) * t.proficiency / currentContibutingTopicDescriptors.length)
 		});
 		this.motivation /= currentContibutingTopicDescriptors.length
 		this.w.setColor('rgba(0,0,255,' + this.motivation + ')')
@@ -305,6 +309,9 @@ class TopicBehavior extends AgentBehavior {
 		return this
 	}
 
+	/**
+	 * @param {number} contributionRate 
+	 */
 	contribute(contributionRate) {
 		this.lastTickContribution += contributionRate
 	}

@@ -104,18 +104,19 @@ export class AggregatedStateBehavior extends AgentBehavior {
 					if (key === 'total_motivation') {
 						valueSupplier = () => {
 							const agentMetricAccessors = agentMetricsByKey[key]
-							agentMetricAccessors
+							return agentMetricAccessors
 								.map(m => m.getValue())
 								.reduce((mv1, mv2) => mv1 + mv2) / agentMetricAccessors.length
 						}
 					} else {
 						valueSupplier = () => {
-							agentMetricsByKey[key]
+							return agentMetricsByKey[key]
 								.map(m => m.getValue())
 								.reduce((mv1, mv2) => Math.max(mv1, mv2))
 						}
 					}
 					aggregatedMetricsByKey[key] = new Metric(key, agentMetric.getTitle(), valueSupplier)
+						.withMax(1.0)
 				}
 			})
 		})

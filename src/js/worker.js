@@ -160,8 +160,10 @@ class WorkerBehavior extends AgentBehavior {
 		this.currentTick = tIdx
 
 		// Abjure all the topics
-		let contibutingTopics = this.topics.forEach(t => t.abjure())
+		this.topics.forEach(t => t.abjure())
+	}
 
+	action(tIdx) {//Engage
 		//console.log("Stop contributing :" + this.idx)
 		this.currentRetentionTicks++
 		if (this.currentRetentionTicks > this.retentionTicks) {
@@ -176,10 +178,6 @@ class WorkerBehavior extends AgentBehavior {
 				}
 			}
 		}
-	}
-
-	action(tIdx) {//Engage
-
 
 		// Contribute to at least one topic which requires workforce
 		this.assign(this.maxCompulsoryTopics, (t1, t2) => this.compareByRequiredWorkers(t1, t2))
@@ -198,7 +196,9 @@ class WorkerBehavior extends AgentBehavior {
 			// }
 
 			if (this.fatigueSimulation) {
-				t.fatigue = this.sigmoid(t.ticks / 3 - 1.5) * (1 - (t.interest + maxInterest) / 2) // Fatigue depends on interest
+				// Fatigue growth with time, but interest in this particular topic and also having a side interest
+				// help to slow down that growth.
+				t.fatigue = this.sigmoid(t.ticks / 3 - 1.5) * (1 - (t.interest + maxInterest) / 2)
 			}
 		})
 
@@ -215,13 +215,13 @@ class WorkerBehavior extends AgentBehavior {
 
 			t.lastContributedTick = tIdx;
 
-			this.motivation += t.interest * (1 - t.fatigue)
+			this.motivation += (t.interest * (1 - t.fatigue)) / currentContibutingTopicDescriptors.length
 
 			/** @type {TopicBehavior} */
 			const topic = t.topic
 			topic.contribute(t.interest * (1 - t.fatigue) * t.proficiency / currentContibutingTopicDescriptors.length)
 		});
-		this.motivation /= currentContibutingTopicDescriptors.length
+
 		this.w.setColor('rgba(0,0,255,' + this.motivation + ')')
 
 		// Update dormant topics
@@ -230,7 +230,6 @@ class WorkerBehavior extends AgentBehavior {
 			if (t.ticks > 0) t.ticks--
 		})
 		this.shouldChangePriority = false
-
 	}
 
 	sigmoid(x) {
@@ -319,6 +318,7 @@ class TopicBehavior extends AgentBehavior {
 	describe() {
 		return [
 			["Required workers", this.requiredWorkers],
+			["Current workers", this.workers],
 			["Avg. interest", Math.round10(this.avgInterestRate)],
 			["Interest deviation", Math.round10(this.deviation)]]
 	}
@@ -331,14 +331,24 @@ class TopicBehavior extends AgentBehavior {
 		this.devSpeed = 0
 		this.workers = 0
 	}
+
 	postAction() {
-		this.devSpeed = this.lastTickContribution
-		this.lastTickContribution = 0
+		// Complexity of coordination grows non-linearly with number of participants
+		let coordinationComplexityPenalty = Math.pow(this.workers, 1.5)
+
+		// Progress is proportional to net efforts, however negatively impacted by coordination complexity 
+		this.devSpeed = this.lastTickContribution / coordinationComplexityPenalty
+
+		// Aggregates of contributor interests in the current toppic
 		let interests = this.workersArr.map(w => w.getInterestIn(this.idx))
 		this.avgInterestRate = interests.reduce((p, c) => p + c, 0) / this.workersArr.length
 		this.deviation = Math.sqrt(interests.reduce((p, c) => p + Math.pow(c - this.avgInterestRate, 2), 0) / this.workersArr.length)
+
+		// Set color for topic depending on how engaing it is for contrbutors
 		let intens = Math.round(255 * this.avgInterestRate)
 		this.t.setColor('rgba(100,' + intens + ',0, 1)')
+
+		this.lastTickContribution = 0
 	}
 	updateOpts(opts) {
 		$.extend(this, opts)

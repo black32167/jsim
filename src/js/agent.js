@@ -48,7 +48,7 @@ var nextId = 0
 export class AgentBehavior {
 	constructor(id) {
 		/** @type {string} */
-		this.id = id || nextId++
+		this.id = id || `${nextId++}`
 	}
 	getAgentShape() {
 		return undefined
@@ -66,12 +66,11 @@ export class AgentBehavior {
 	postAction(tickNo) {
 	}
 
-
 	/** 
 	 * @return {Array.<Metric>} 
 	 */
 	getMetrics() {
-
+		return []
 	}
 }
 

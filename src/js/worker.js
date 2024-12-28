@@ -6,7 +6,7 @@ import $ from 'jquery'
 import 'jcanvas'
 import { PresetControl } from './input-control/preset-control.js'
 import { Metric } from './metrics.js'
-import { to } from 'mathjs'
+import { avogadroDependencies, firstRadiationDependencies, to } from 'mathjs'
 
 /**
  * @typedef {import('./agent.js').MetricHeader} MetricHeader
@@ -14,41 +14,46 @@ import { to } from 'mathjs'
  */
 
 class WorkerLayout {
+	/** @type {Array.<WorkerBehavior> } */
+	#workers = []
+
+	/** @type {Array.<TopicBehavior> } */
+	#topics = []
+
 	constructor() {
-		this.workers = []
-		this.topics = []
+
 	}
 	addWorker(e) {
-		this.workers.push(e)
+		this.#workers.push(e)
 	}
 	addTopic(e) {
-		this.topics.push(e)
+		this.#topics.push(e)
 	}
 	arrange(c) {
 		let topicsY = 50
 		let workersY = c.height() - 50
 
 		// Arrange topics
-		let topicsNum = this.topics.length
-		this.topics.forEach((a, i) => {
+		let topicsNum = this.#topics.length
+		this.#topics.forEach((a, i) => {
 			let step = (c.width() - 10) / topicsNum
 			a.setPos(step * (i + 0.5) + 5,
 				topicsY)
 		})
 
 		// Arrange workers
-		let workersNum = this.workers.length
-		this.workers.forEach((a, i) => {
+		let workersNum = this.#workers.length
+		this.#workers.forEach((a, i) => {
 			let step = (c.width() - 10) / workersNum
 			a.setPos(step * (i + 0.5) + 5,
 				workersY)
 		})
 	}
 	draw(c) {
-		this.topics.forEach(a => {
+		this.#topics.forEach(a => {
 			a.getAgentShape().draw(c);
 		})
-		this.workers.forEach(w => {
+		this.#workers.forEach(w => {
 			w.getAgentShape().draw(c);
 			let contributedTopics = w.getContributedTopics()
 			contributedTopics.forEach(t => {
@@ -67,45 +72,88 @@ class WorkerLayout {
 	}
 }
 
+class ManagerBehavior extends AgentBehavior {
+	#currentRetentionTicks = 0
+
+	/** @type {Array<WorkerBehavior>} */
+	#workersQueue = []
+
+	/** @type {Array<TopicBehavior>} */
+	#projects = []
+
+	/**
+	 * 
+	 * @param {Array.<WorkerBehavior>} workers 
+	 */
+	constructor(workers, projects) {
+		super()
+		this.#workersQueue = [...workers]
+		this.#projects = [...projects]
+
+		// Settings
+		this.retentionTicks = 10
+		this.switchingWorkersNumber = 2
+	}
+
+	//TODO: just swap two?
+	action(tick) {
+		if (tick == 0) {
+			this.#workersQueue.forEach((w, i) => {
+				this.#projects[i % this.#projects.length].assignWorker(w.id)
+			})
+		} else {
+			this.#currentRetentionTicks++
+			if (this.#currentRetentionTicks > this.retentionTicks) {
+				this.#currentRetentionTicks = 0
+				for (let i = 0; i < this.switchingWorkersNumber; i++) {
+					const workerToReassign = this.#workersQueue.shift()
+					console.log(`Choosing new projects for worker ${workerToReassign.id}`)
+
+					workerToReassign.reassignProjects()
+
+					this.#workersQueue.push(workerToReassign)
+				}
+			}
+		}
+	}
+}
+
 class WorkerBehavior extends AgentBehavior {
-	constructor(idx, totalWorkers, topics) {
+	/**
+	 * @typedef {Object} TopicParameters
+	 * @property {number} fatigue 
+	 * @property {number} contributionTime
+	 * @property {number} interest 
+	 * @property {number} proficiency
+	 */
+
+	/** @type {Object.<string, TopicParameters} */
+	#topicParametersByTopicId = {}
+
+	/**
+	 * @param {number} idx 
+	 * @param {Array.<TopicBehavior>} topics 
+	 */
+	constructor(idx, topics) {
 		super()
 		this.idx = idx
-		this.totalWorkers = totalWorkers
 		this.maxCompulsoryTopics = 1
 		this.maxOptionalTopics = 0
 		this.retentionTicks = 20 // How many ticks worker is assigned to the particular project
-		this.currentRetentionTicks = 0
 		this.prificiencyDecayRate = 0.95
 		this.proficiencyDevelopingRate = 1.2
 		this.synchronousSwitchover = true
-		this.fatigueSimulation = false
+		this.fatigueSimulation = true
 		this.seekMandatoryExperience = false
+		this.switchingWorkersNumber = 2
 
-		this.topics = topics.map(t => {
-			return {
-				topic: t,
-				interest: 0.5,
-				proficiency: 0.1,
-				contributing: false,
+		this.topics = [...topics]
+		this.topics.forEach(t => {
+			this.#topicParametersByTopicId[t.id] = {
 				fatigue: 0,
-				ticks: 0,
-				lastContributedTick: 0,
-				lastChangedTick: 0,
-
-				assign: function () {
-					if (this.contributing) {
-						throw "Already contributing!"
-					}
-					this.contributing = true
-					this.topic.workers++
-				},
-				abjure: function () {
-					if (this.contributing) {
-						this.contributing = false
-						this.topic.workers--
-					}
-				}
+				contributionTime: 0,
+				interest: 0.5,
+				proficiency: 0
 			}
 		})
 
@@ -115,28 +163,46 @@ class WorkerBehavior extends AgentBehavior {
 			new Metric("total_motivation", "Total motivation", () => this.motivation)
 				.withMax(1.0)
 		]
-		this.topics.forEach((t, i) => this.metrics.push(
-			new Metric(`topic_skill_${i}`, `Skill in topic #${i}`, () => Math.round10(t.proficiency))
-				.withMax(1.0)
-		))
+		Object.entries(this.#topicParametersByTopicId).forEach(([topicId, t]) => {
+			this.metrics.push(
+				new Metric(`topic_skill_${topicId}`, `Skill in topic #${topicId}`, () => Math.round10(t.proficiency))
+					.withMax(1.0)
+			)
+			this.metrics.push(
+				new Metric(`topic_fatigue_${topicId}`, `Fatigue in topic #${topicId}`, () => Math.round10(t.fatigue))
+					.withMax(1.0)
+			)
+		})
 
 		this.w = new AgentShape()
 		this.w.r = 8
 		this.motivation = 0.5
-		this.shouldChangePriority = false
+		this.shouldChangePriority = true
 		this.workForce = 1
 	}
+
+	reassignProjects() {
+		// Reassign compulsory projects
+		let selectedCompulsory = this.#selectTopic(this.maxCompulsoryTopics, (t1, t2) => this.#compareByRequiredWorkersFirstDesc(t1, t2))
+		this.topics.forEach(t => t.abjureWorker(this.id))
+		selectedCompulsory.forEach(t => t.assignWorker(this.id))
+
+		// Reassign optional projects
+		let selectedOptional = this.#selectTopic(this.maxOptionalTopics, (t1, t2) => this.#compareByFatigueAsc(t1, t2))
+		selectedOptional.forEach(t => t.assignWorker(this.id))
+	}
+
 	updateOpts(opts) {
 		$.extend(this, opts)
 	}
 	updateTopicsOpts(updateFunc) {
-		this.topics.forEach(updateFunc)
+		Object.values(this.#topicParametersByTopicId).forEach(updateFunc)
 	}
 
 	describe() {
 		let meta = []
-		this.topics.forEach((t, i) => {
-			meta.push(["Topic #" + i + " interest", Math.round10(t.interest)])
+		Object.entries(this.#topicParametersByTopicId).forEach(([topicId, topicParameters]) => {
+			meta.push(["Topic #" + topicId + " interest", Math.round10(topicParameters.interest)])
 		})
 		return meta
 	}
@@ -152,83 +218,62 @@ class WorkerBehavior extends AgentBehavior {
 	getAgentShape() { return this.w }
 
 	getContributedTopics() {
-		return this.topics.filter(t => t.contributing).map(t => t.topic);
+		return this.topics.filter(t => t.isContributing(this.id));
 	}
 
 	preAction(tIdx) {//Disengage
 		//this.priority = 0
 		this.currentTick = tIdx
 
-		// Abjure all the topics
-		this.topics.forEach(t => t.abjure())
+		// // Abjure all the topics
+		// this.topics.forEach(t => t.abjure())
 	}
 
 	action(tIdx) {//Engage
-		//console.log("Stop contributing :" + this.idx)
-		this.currentRetentionTicks++
-		if (this.currentRetentionTicks > this.retentionTicks) {
-			this.currentRetentionTicks = 0
-			if (this.synchronousSwitchover) {
-				this.shouldChangePriority = true
-			} else {
-				// One-by-one switchover
-				if (Math.floor(tIdx / this.retentionTicks) % this.totalWorkers == this.idx) {
-					this.shouldChangePriority = true
-					console.log("shouldChangePriority = " + this.shouldChangePriority + ", idx = " + this.idx)
-				}
-			}
-		}
-
-		// Contribute to at least one topic which requires workforce
-		this.assign(this.maxCompulsoryTopics, (t1, t2) => this.compareByRequiredWorkers(t1, t2))
-
-		// Contribute to all other interesting topics
-		this.assign(this.maxOptionalTopics, (t1, t2) => -this.compareByInterestAsc(t1, t2))
-
-
 		// Update proficiency/fatigue in all contributing topics
-		let currentContibutingTopicDescriptors = this.topics.filter(t => t.contributing)
-		let maxInterest = currentContibutingTopicDescriptors.map(t => t.interest).reduce((a, b) => Math.max(a, b))
-		this.topics.forEach(t => {
-			t.proficiency = this.sigmoid(t.interest * t.ticks / 3 - 3.5)  // Proficiency depends on interest
-			// if (this.id === 27 && t.topic.id === 21) {
-			// 	console.log(`t=${t.topic.id},p=${t.proficiency},i=${t.interest}, tc=${t.ticks}, tick ${tIdx}`)
-			// }
-
-			if (this.fatigueSimulation) {
-				// Fatigue growth with time, but interest in this particular topic and also having a side interest
-				// help to slow down that growth.
-				t.fatigue = this.sigmoid(t.ticks / 3 - 1.5) * (1 - (t.interest + maxInterest) / 2)
-			}
-		})
+		let currentContibutingTopicDescriptors = this.topics.filter(t => t.isContributing(this.id))
+		// let maxInterest = currentContibutingTopicDescriptors.map(t => t.interest).reduce((a, b) => Math.max(a, b), 0.0)
 
 		// Update topics being contributed
 		this.motivation = 0
 
 		currentContibutingTopicDescriptors.forEach((t, i) => {
-			if (this.shouldChangePriority) {
-				// console.log("Topic #" + i + " has changed, priority = " + this.priority + ", tick=" + this.currentTick + ", lastCT = " + t.lastContributedTick)
-				t.lastChangedTick = this.currentTick
+			const topicDescriptor = this.#topicParametersByTopicId[t.id]
+			const fatigue = topicDescriptor.fatigue
+			const proficiency = topicDescriptor.proficiency
+			const interest = topicDescriptor.interest
+
+			// Limiting how far the 'time' parameter can get
+			const epsilon = 0.0001
+			if (Math.abs(fatigue - 1) > epsilon || Math.abs(proficiency - 1) > epsilon) {
+				topicDescriptor.contributionTime++
 			}
 
-			t.ticks++
-
-			t.lastContributedTick = tIdx;
-
-			this.motivation += (t.interest * (1 - t.fatigue)) / currentContibutingTopicDescriptors.length
+			this.motivation = (1 - fatigue) / currentContibutingTopicDescriptors.length
 
 			/** @type {TopicBehavior} */
-			const topic = t.topic
-			topic.contribute(t.interest * (1 - t.fatigue) * t.proficiency / currentContibutingTopicDescriptors.length)
+			const contribution = interest * (1 - fatigue) * proficiency / currentContibutingTopicDescriptors.length
+			t.contribute(contribution, fatigue)
 		});
 
 		this.w.setColor('rgba(0,0,255,' + this.motivation + ')')
 
 		// Update dormant topics
-		let currentNonContibutingTopics = this.topics.filter(t => !t.contributing)
+		let currentNonContibutingTopics = this.topics.filter(t => !t.isContributing(this.id))
 		currentNonContibutingTopics.forEach(t => {
-			if (t.ticks > 0) t.ticks--
+			const topicDescriptor = this.#topicParametersByTopicId[t.id]
+			if (topicDescriptor.contributionTime > 0) topicDescriptor.contributionTime--
 		})
+
+		// Update time-dependent project parameters
+		Object.values(this.#topicParametersByTopicId).forEach(t => {
+			// Fatigue growth with time, but interest in this particular topic and also having a side interest
+			// help to slow down that growth.
+			t.fatigue = (this.sigmoid(t.contributionTime / (t.interest * 100)) - 0.5) * 2
+
+			t.proficiency = (this.sigmoid(t.interest * t.contributionTime / 3) - 0.5) * 2
+		})
+
 		this.shouldChangePriority = false
 	}
 
@@ -238,15 +283,21 @@ class WorkerBehavior extends AgentBehavior {
 	}
 
 	assign(maxAssinments, comparator) {
-		let unassignedTopics = this.topics.filter(t => !t.contributing)
+		let unassignedTopics = this.topics.filter(t => !t.isContributing(this.id))
 		unassignedTopics.sort(comparator)
 
 		let count = Math.max(maxAssinments, 0)
 		for (let i = 0; i < Math.min(count, unassignedTopics.length); i++) {
 			unassignedTopics[i].assign()
 		}
-
 	}
+
+	#selectTopic(maxAssinments, comparator) {
+		let unassignedTopics = this.topics.filter(t => !t.isContributing(this.id))
+		unassignedTopics.sort(comparator)
+		return unassignedTopics.slice(0, Math.min(maxAssinments, unassignedTopics.length))
+	}
+
 
 	postAction() {
 
@@ -260,31 +311,41 @@ class WorkerBehavior extends AgentBehavior {
 		return 0;
 	}
 
-	compareByInterestAsc(t1, t2) {
-		return this.compareNums(t1.interest, t2.interest)
+	#compareByFatigueAsc(t1, t2) {
+		//return this.compareNums(t1.interest, t2.interest)
+		return this.compareNums(this.#topicParametersByTopicId[t1.id].fatigue, this.#topicParametersByTopicId[t2.id].fatigue)
 	}
 
 	/**
 	 * The ordering topics by workers demand will result in switching of the current worker with the other one.
+	 * 
+	 * @param {TopicBehavior} t1
+	 * @param {TopicBehavior} t2
 	 */
-	compareByRequiredWorkers(t1, t2) {
-		let deficit1 = t1.topic.requiredWorkers - t1.topic.workers
-		let deficit2 = t2.topic.requiredWorkers - t2.topic.workers
+	#compareByRequiredWorkersFirstDesc(t1, t2) {
+		let deficit1 = t1.requiredWorkers - t1.contributorsCount()
+		let deficit2 = t2.requiredWorkers - t2.contributorsCount()
 		let c = -this.compareNums(deficit1, deficit2)
 		if (c == 0) {
 			//!!! return -this.compareByInterestAsc(t1, t2)
-			return this.compareNums(t1.lastChangedTick, t2.lastChangedTick)
+			return this.#compareByFatigueAsc(t1, t2) // this.compareNums(t1.fatigue, t2.fatigue)
 		}
 		return c
 	}
 
-	getInterestIn(topicIdx) {
-		return this.topics[topicIdx].interest
+	getInterestIn(topicId) {
+		return this.#topicParametersByTopicId[topicId].interest
 	}
 }
 
 
 class TopicBehavior extends AgentBehavior {
+	/** @type {Array.<string>}*/
+	#contributingWorkerIds = []
+
+	/** @type {Array.<WorkerBehavior>}*/
+	#workersArr = []
+
 	constructor(idx) {
 		super()
 		this.idx = idx
@@ -292,35 +353,57 @@ class TopicBehavior extends AgentBehavior {
 		this.lastTickContribution = 0
 		this.devSpeed = 0
 		this.requiredWorkers = 2
-		this.workers = 0
 		this.t.setColor('green')
 		this.avgInterestRate = 1
-		this.deviation = 0
-		this.debt = 0
-		this.workersArr = []
+		this.interestsDeviation = 0
+		this.averageFatigue = 0.0
 		this.metrics = [
 			new Metric("dev_speed", "Development Speed", () => this.devSpeed),
-			new Metric("workers_current", "Current workers", () => this.workers)
+			new Metric("workers_current", "Current contributors", () => this.contributorsCount()),
+			new Metric("average_fatigue", "Average fatigue", () => this.averageFatigue)
 		]
 	}
 	setWorkers(workersArr) {
-		this.workersArr = workersArr
+		this.#workersArr = [...workersArr]
 		return this
 	}
 
+	contributorsCount() {
+		return this.#contributingWorkerIds.length
+	}
+
+	isContributing(workerId) {
+		return this.#contributingWorkerIds.includes(workerId)
+	}
+
+	assignWorker(workerId) {
+		if (this.isContributing(workerId)) {
+			throw "Already contributing!"
+		}
+		this.#contributingWorkerIds.push(workerId)
+	}
+
+	abjureWorker(workerId) {
+		var index = this.#contributingWorkerIds.indexOf(workerId);
+		if (index !== -1) {
+			this.#contributingWorkerIds.splice(index, 1);
+		}
+	}
 	/**
 	 * @param {number} contributionRate 
+	 * @param {number} fatigue
 	 */
-	contribute(contributionRate) {
+	contribute(contributionRate, fatigue) {
 		this.lastTickContribution += contributionRate
+		this.averageFatigue += fatigue / this.contributorsCount()
 	}
 	getAgentShape() { return this.t }
 	describe() {
 		return [
 			["Required workers", this.requiredWorkers],
-			["Current workers", this.workers],
+			["Current workers", this.contributorsCount()],
 			["Avg. interest", Math.round10(this.avgInterestRate)],
-			["Interest deviation", Math.round10(this.deviation)]]
+			["Interest deviation", Math.round10(this.interestsDeviation)]]
 	}
 
 	getMetrics() {
@@ -329,20 +412,25 @@ class TopicBehavior extends AgentBehavior {
 
 	cleanState() {
 		this.devSpeed = 0
-		this.workers = 0
+		this.#contributingWorkerIds = []
+		this.lastTickContribution = 0
+		this.averageFatigue = 0
 	}
 
-	postAction() {
+	preAction(tIdx) {
+		this.averageFatigue = 0
+	}
+	postAction(tIdx) {
 		// Complexity of coordination grows non-linearly with number of participants
-		let coordinationComplexityPenalty = Math.pow(this.workers, 1.5)
+		let coordinationComplexityPenalty = Math.pow(this.contributorsCount(), 1.5)
 
 		// Progress is proportional to net efforts, however negatively impacted by coordination complexity 
 		this.devSpeed = this.lastTickContribution / coordinationComplexityPenalty
 
 		// Aggregates of contributor interests in the current toppic
-		let interests = this.workersArr.map(w => w.getInterestIn(this.idx))
-		this.avgInterestRate = interests.reduce((p, c) => p + c, 0) / this.workersArr.length
-		this.deviation = Math.sqrt(interests.reduce((p, c) => p + Math.pow(c - this.avgInterestRate, 2), 0) / this.workersArr.length)
+		let interests = this.#workersArr.map(w => w.getInterestIn(this.idx))
+		this.avgInterestRate = interests.reduce((p, c) => p + c, 0) / this.#workersArr.length
+		this.interestsDeviation = Math.sqrt(interests.reduce((p, c) => p + Math.pow(c - this.avgInterestRate, 2), 0) / this.#workersArr.length)
 
 		// Set color for topic depending on how engaing it is for contrbutors
 		let intens = Math.round(255 * this.avgInterestRate)
@@ -356,6 +444,12 @@ class TopicBehavior extends AgentBehavior {
 }
 
 class DynamicCollaborationModel extends Model {
+	/** @type {Array.<TopicBehavior>} */
+	#topics = []
+
+	/** @type {Array.<WorkerBehavior>} */
+	#workers = []
+
 	constructor(title, wN, tN) {
 		super(title)
 
@@ -371,20 +465,21 @@ class DynamicCollaborationModel extends Model {
 
 		let workers = []
 		for (let i = 0; i < wN; i++) {
-			let a = new WorkerBehavior(i, wN, topics);
+			let a = new WorkerBehavior(i, topics);
 
 			workers.push(a)
 			layout.addWorker(a)
 		}
 		topics.forEach(t => t.setWorkers(workers))
-		this.topics = topics
-		this.workers = workers
+		this.#topics = topics
+		this.#workers = workers
 		this.aggregatedState = new AggregatedStateBehavior(workers)
 		this.layout = layout
 		this.allAgentsById = {}
-		this.workers
-			.concat(this.topics)
+		this.#workers
+			.concat(this.#topics)
 			.concat([this.aggregatedState])
+			.concat([new ManagerBehavior(this.#workers, this.#topics)])
 			.forEach(a => {
 				this.allAgentsById[a.id] = a
 			})
@@ -411,15 +506,15 @@ class DynamicCollaborationModel extends Model {
 	}
 
 	updateTopicOpts(opts) {
-		this.topics.forEach(t => t.updateOpts(opts))
+		this.#topics.forEach(t => t.updateOpts(opts))
 		return this
 	}
 	updateWorkersOpts(opts) {
-		this.workers.forEach(w => w.updateOpts(opts))
+		this.#workers.forEach(w => w.updateOpts(opts))
 		return this
 	}
 	updateWorkerTopics(updateFunc) {
-		this.workers.forEach(w => w.updateTopicsOpts(updateFunc))
+		this.#workers.forEach(w => w.updateTopicsOpts(updateFunc))
 		return this
 	}
 
@@ -428,47 +523,47 @@ class DynamicCollaborationModel extends Model {
 	getAggregatedState() {
 		let aggregatedState = []
 
-		let w0 = this.workers[0]
+		let w0 = this.#workers[0]
 		w0.stateHeaders().forEach(wh => aggregatedState.push({
 			title: wh,
 			value: 0
 		}))
-		this.workers.forEach(w => {
+		this.#workers.forEach(w => {
 			for (let i = 0; i < aggregatedState.length; i++) {
 				aggregatedState[i].value += w.state()[i]
 			}
 		})
-		let wokersCount = this.workers.length
+		let wokersCount = this.#workers.length
 		aggregatedState.forEach(parameter => parameter.value /= wokersCount)
 		return aggregatedState
 	}
 }
 
 let parameters = [
-	{
-		title: "Humans, 1c, noswitch",
-		description: "Number of employees work on some forcibly assigned topics permanently. ",
-		workersCount: 30,
-		topicsCount: 5,
-		workerOptions: { retentionTicks: 900, maxCompulsoryTopics: 1, fatigueSimulation: true },
-		topicOptions: { requiredWorkers: 6 }
-	},
-	{
-		title: "Humans, 1c, sync. switch",
-		description: "Number of employees work on some forcibly assigned topics with <i>synchronously</i> switch between topics periodically. ",
-		workersCount: 30,
-		topicsCount: 5,
-		workerOptions: { retentionTicks: 20, maxCompulsoryTopics: 1, fatigueSimulation: true },
-		topicOptions: { requiredWorkers: 6 }
-	},
+	// {
+	// 	title: "Humans, 1c, noswitch",
+	// 	description: "Number of employees work on some forcibly assigned topics permanently. ",
+	// 	workersCount: 30,
+	// 	topicsCount: 5,
+	// 	workerOptions: { retentionTicks: 900, maxCompulsoryTopics: 1 },
+	// 	topicOptions: { requiredWorkers: 6 }
+	// },
+	// {
+	// 	title: "Humans, 1c, sync. switch",
+	// 	description: "Number of employees work on some forcibly assigned topics with <i>synchronously</i> switch between topics periodically. ",
+	// 	workersCount: 30,
+	// 	topicsCount: 5,
+	// 	workerOptions: { retentionTicks: 20, maxCompulsoryTopics: 1, maxOptionalTopics: 1 },
+	// 	topicOptions: { requiredWorkers: 3 }
+	// },
 	{
 		title: "Humans, 1c, 1opt, queued switchover",
 		description: "Number of employees work on some forcibly assigned topics with ability to share efforts with optinal interesting topic. " +
 			"From time to time employees are forced to switch between compulsory topics. ",
 		workersCount: 30,
 		topicsCount: 5,
-		workerOptions: { retentionTicks: 10, maxCompulsoryTopics: 1, fatigueSimulation: true, maxOptionalTopics: 1, synchronousSwitchover: false },
-		topicOptions: { requiredWorkers: 6 }
+		workerOptions: { retentionTicks: 10, maxCompulsoryTopics: 1, maxOptionalTopics: 1, synchronousSwitchover: false },
+		topicOptions: { requiredWorkers: 3 }
 	}
 ]
 

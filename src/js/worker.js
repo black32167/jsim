@@ -6,7 +6,6 @@ import $ from 'jquery'
 import 'jcanvas'
 import { PresetControl } from './input-control/preset-control.js'
 import { Metric } from './metrics.js'
-import { avogadroDependencies, firstRadiationDependencies, to } from 'mathjs'
 
 /**
  * @typedef {import('./agent.js').MetricHeader} MetricHeader
@@ -91,8 +90,12 @@ class ManagerBehavior extends AgentBehavior {
 		this.#projects = [...projects]
 
 		// Settings
-		this.retentionTicks = 10
+		this.retentionTicks = 5
 		this.switchingWorkersNumber = 2
+	}
+
+	updateOpts(opts) {
+		$.extend(this, opts)
 	}
 
 	//TODO: just swap two?
@@ -428,7 +431,7 @@ class TopicBehavior extends AgentBehavior {
 		this.devSpeed = this.lastTickContribution / coordinationComplexityPenalty
 
 		// Aggregates of contributor interests in the current toppic
-		let interests = this.#workersArr.map(w => w.getInterestIn(this.idx))
+		let interests = this.#workersArr.map(w => w.getInterestIn(this.id))
 		this.avgInterestRate = interests.reduce((p, c) => p + c, 0) / this.#workersArr.length
 		this.interestsDeviation = Math.sqrt(interests.reduce((p, c) => p + Math.pow(c - this.avgInterestRate, 2), 0) / this.#workersArr.length)
 
@@ -450,36 +453,36 @@ class DynamicCollaborationModel extends Model {
 	/** @type {Array.<WorkerBehavior>} */
 	#workers = []
 
+	/** @type {ManagerBehavior} */
+	#manager = []
+
 	constructor(title, wN, tN) {
 		super(title)
 
 		let layout = new WorkerLayout()
 
-		let topics = []
 		for (let i = 0; i < tN; i++) {
 			let tb = new TopicBehavior(i)
 
-			topics.push(tb)
+			this.#topics.push(tb)
 			layout.addTopic(tb)
 		}
 
-		let workers = []
 		for (let i = 0; i < wN; i++) {
-			let a = new WorkerBehavior(i, topics);
+			let a = new WorkerBehavior(i, this.#topics);
 
-			workers.push(a)
+			this.#workers.push(a)
 			layout.addWorker(a)
 		}
-		topics.forEach(t => t.setWorkers(workers))
-		this.#topics = topics
-		this.#workers = workers
-		this.aggregatedState = new AggregatedStateBehavior(workers)
+		this.#topics.forEach(t => t.setWorkers(this.#workers))
+		this.#manager = new ManagerBehavior(this.#workers, this.#topics)
+		this.aggregatedState = new AggregatedStateBehavior(this.#workers)
 		this.layout = layout
 		this.allAgentsById = {}
 		this.#workers
 			.concat(this.#topics)
 			.concat([this.aggregatedState])
-			.concat([new ManagerBehavior(this.#workers, this.#topics)])
+			.concat([this.#manager])
 			.forEach(a => {
 				this.allAgentsById[a.id] = a
 			})
@@ -517,7 +520,10 @@ class DynamicCollaborationModel extends Model {
 		this.#workers.forEach(w => w.updateTopicsOpts(updateFunc))
 		return this
 	}
-
+	updateManagerOpts(opts) {
+		this.#manager.updateOpts(opts)
+		return this
+	}
 
 	// [{title:"Consumption", value:0}]
 	getAggregatedState() {
@@ -562,8 +568,9 @@ let parameters = [
 			"From time to time employees are forced to switch between compulsory topics. ",
 		workersCount: 30,
 		topicsCount: 5,
-		workerOptions: { retentionTicks: 10, maxCompulsoryTopics: 1, maxOptionalTopics: 1, synchronousSwitchover: false },
-		topicOptions: { requiredWorkers: 3 }
+		workerOptions: { retentionTicks: 10, maxCompulsoryTopics: 1, maxOptionalTopics: 1 },
+		topicOptions: { requiredWorkers: 3 },
+		managerOptions: { retentionTicks: 5, switchingWorkersNumber: 2 }
 	}
 ]
 
@@ -577,20 +584,21 @@ $(function () {
 		parameters
 	)
 	preset.onSelectionChanged(() => {
-		$('#input-retention').val(preset.getSelectedParameters().workerOptions.retentionTicks)
+		$('#input-retention').val(preset.getSelectedParameters().managerOptions.retentionTicks)
 		updateModel()
 	})
 
 	function updateModel() {
 		let selectedModelPrameters = preset.getSelectedParameters()
 		selectedModelPrameters.workersCount = parseInt($('#input-maxWorkers').val())
-		selectedModelPrameters.workerOptions.retentionTicks = parseInt($('#input-retention').val())
+		selectedModelPrameters.managerOptions.retentionTicks = parseInt($('#input-retention').val())
 
 		let model = new DynamicCollaborationModel(selectedModelPrameters.title, selectedModelPrameters.workersCount, selectedModelPrameters.topicsCount).
 			description(selectedModelPrameters.description).//
 			updateTopicOpts(selectedModelPrameters.topicOptions).//
 			updateWorkersOpts(selectedModelPrameters.workerOptions).//
-			updateWorkerTopics((t, i) => t.interest = (5 - i) / 5)
+			updateWorkerTopics((t, i) => t.interest = (5 - i) / 5).
+			updateManagerOpts(selectedModelPrameters.managerOptions)
 
 		engine.setModel(model)
 	}

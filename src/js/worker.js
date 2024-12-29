@@ -1,4 +1,4 @@
-import { AgentBehavior, AgentShape, AggregatedStateBehavior } from './agent.js'
+import { AgentBehavior, AgentShape } from './agent.js'
 import { Model } from './models.js'
 import { Engine } from './engine.js'
 import { PageLayoutManager } from './page-layout'
@@ -133,13 +133,16 @@ class WorkerBehavior extends AgentBehavior {
 	/** @type {Object.<string, TopicParameters} */
 	#topicParametersByTopicId = {}
 
+	/** @type {Array.<TopicBehavior} */
+	#topics = []
+
 	/**
 	 * @param {number} idx 
 	 * @param {Array.<TopicBehavior>} topics 
 	 */
 	constructor(idx, topics) {
 		super()
-		this.idx = idx
+		//this.idx = idx
 		this.maxCompulsoryTopics = 1
 		this.maxOptionalTopics = 0
 		this.retentionTicks = 20 // How many ticks worker is assigned to the particular project
@@ -150,8 +153,8 @@ class WorkerBehavior extends AgentBehavior {
 		this.seekMandatoryExperience = false
 		this.switchingWorkersNumber = 2
 
-		this.topics = [...topics]
-		this.topics.forEach(t => {
+		this.#topics = [...topics]
+		this.#topics.forEach(t => {
 			this.#topicParametersByTopicId[t.id] = {
 				fatigue: 0,
 				contributionTime: 0,
@@ -187,7 +190,7 @@ class WorkerBehavior extends AgentBehavior {
 	reassignProjects() {
 		// Reassign compulsory projects
 		let selectedCompulsory = this.#selectTopic(this.maxCompulsoryTopics, (t1, t2) => this.#compareByRequiredWorkersFirstDesc(t1, t2))
-		this.topics.forEach(t => t.abjureWorker(this.id))
+		this.#topics.forEach(t => t.abjureWorker(this.id))
 		selectedCompulsory.forEach(t => t.assignWorker(this.id))
 
 		// Reassign optional projects
@@ -221,7 +224,7 @@ class WorkerBehavior extends AgentBehavior {
 	getAgentShape() { return this.w }
 
 	getContributedTopics() {
-		return this.topics.filter(t => t.isContributing(this.id));
+		return this.#topics.filter(t => t.isContributing(this.id));
 	}
 
 	preAction(tIdx) {//Disengage
@@ -234,7 +237,7 @@ class WorkerBehavior extends AgentBehavior {
 
 	action(tIdx) {//Engage
 		// Update proficiency/fatigue in all contributing topics
-		let currentContibutingTopicDescriptors = this.topics.filter(t => t.isContributing(this.id))
+		let currentContibutingTopicDescriptors = this.#topics.filter(t => t.isContributing(this.id))
 		// let maxInterest = currentContibutingTopicDescriptors.map(t => t.interest).reduce((a, b) => Math.max(a, b), 0.0)
 
 		// Update topics being contributed
@@ -262,7 +265,7 @@ class WorkerBehavior extends AgentBehavior {
 		this.w.setColor('rgba(0,0,255,' + this.motivation + ')')
 
 		// Update dormant topics
-		let currentNonContibutingTopics = this.topics.filter(t => !t.isContributing(this.id))
+		let currentNonContibutingTopics = this.#topics.filter(t => !t.isContributing(this.id))
 		currentNonContibutingTopics.forEach(t => {
 			const topicDescriptor = this.#topicParametersByTopicId[t.id]
 			if (topicDescriptor.contributionTime > 0) topicDescriptor.contributionTime--
@@ -286,7 +289,7 @@ class WorkerBehavior extends AgentBehavior {
 	}
 
 	assign(maxAssinments, comparator) {
-		let unassignedTopics = this.topics.filter(t => !t.isContributing(this.id))
+		let unassignedTopics = this.#topics.filter(t => !t.isContributing(this.id))
 		unassignedTopics.sort(comparator)
 
 		let count = Math.max(maxAssinments, 0)
@@ -296,7 +299,7 @@ class WorkerBehavior extends AgentBehavior {
 	}
 
 	#selectTopic(maxAssinments, comparator) {
-		let unassignedTopics = this.topics.filter(t => !t.isContributing(this.id))
+		let unassignedTopics = this.#topics.filter(t => !t.isContributing(this.id))
 		unassignedTopics.sort(comparator)
 		return unassignedTopics.slice(0, Math.min(maxAssinments, unassignedTopics.length))
 	}
@@ -336,8 +339,12 @@ class WorkerBehavior extends AgentBehavior {
 		return c
 	}
 
-	getInterestIn(topicId) {
+	getInterestInTopic(topicId) {
 		return this.#topicParametersByTopicId[topicId].interest
+	}
+
+	getProficiencyInTopic(topicId) {
+		return this.#topicParametersByTopicId[topicId].proficiency
 	}
 }
 
@@ -349,21 +356,26 @@ class TopicBehavior extends AgentBehavior {
 	/** @type {Array.<WorkerBehavior>}*/
 	#workersArr = []
 
+	#devSpeed = 0
+	#averageFatigue = 0.0
+	#averageExpertise = 0.0
+	#avgInterestRate = 1
+	#interestsDeviation = 0
+	#lastTickContribution = 0
+
 	constructor(idx) {
 		super()
 		this.idx = idx
 		this.t = new AgentShape()
-		this.lastTickContribution = 0
-		this.devSpeed = 0
+
 		this.requiredWorkers = 2
 		this.t.setColor('green')
-		this.avgInterestRate = 1
-		this.interestsDeviation = 0
-		this.averageFatigue = 0.0
+
 		this.metrics = [
-			new Metric("dev_speed", "Development Speed", () => this.devSpeed),
+			new Metric("dev_speed", "Development Speed", () => this.#devSpeed),
 			new Metric("workers_current", "Current contributors", () => this.contributorsCount()),
-			new Metric("average_fatigue", "Average fatigue", () => this.averageFatigue)
+			new Metric("average_fatigue", "Average fatigue", () => this.#averageFatigue),
+			new Metric("average_expertise", "Average expertise", () => this.#averageExpertise)
 		]
 	}
 	setWorkers(workersArr) {
@@ -397,16 +409,16 @@ class TopicBehavior extends AgentBehavior {
 	 * @param {number} fatigue
 	 */
 	contribute(contributionRate, fatigue) {
-		this.lastTickContribution += contributionRate
-		this.averageFatigue += fatigue / this.contributorsCount()
+		this.#lastTickContribution += contributionRate
+		this.#averageFatigue += fatigue / this.contributorsCount()
 	}
 	getAgentShape() { return this.t }
 	describe() {
 		return [
 			["Required workers", this.requiredWorkers],
 			["Current workers", this.contributorsCount()],
-			["Avg. interest", Math.round10(this.avgInterestRate)],
-			["Interest deviation", Math.round10(this.interestsDeviation)]]
+			["Avg. interest", Math.round10(this.#avgInterestRate)],
+			["Interest deviation", Math.round10(this.#interestsDeviation)]]
 	}
 
 	getMetrics() {
@@ -414,35 +426,100 @@ class TopicBehavior extends AgentBehavior {
 	}
 
 	cleanState() {
-		this.devSpeed = 0
+		this.#devSpeed = 0
 		this.#contributingWorkerIds = []
-		this.lastTickContribution = 0
-		this.averageFatigue = 0
+		this.#lastTickContribution = 0
+		this.#averageFatigue = 0
 	}
 
 	preAction(tIdx) {
-		this.averageFatigue = 0
+		this.#averageFatigue = 0
 	}
 	postAction(tIdx) {
+		const workersCnt = this.#workersArr.length
+
 		// Complexity of coordination grows non-linearly with number of participants
 		let coordinationComplexityPenalty = Math.pow(this.contributorsCount(), 1.5)
 
 		// Progress is proportional to net efforts, however negatively impacted by coordination complexity 
-		this.devSpeed = this.lastTickContribution / coordinationComplexityPenalty
+		this.#devSpeed = this.#lastTickContribution / coordinationComplexityPenalty
 
 		// Aggregates of contributor interests in the current toppic
-		let interests = this.#workersArr.map(w => w.getInterestIn(this.id))
-		this.avgInterestRate = interests.reduce((p, c) => p + c, 0) / this.#workersArr.length
-		this.interestsDeviation = Math.sqrt(interests.reduce((p, c) => p + Math.pow(c - this.avgInterestRate, 2), 0) / this.#workersArr.length)
+		let interests = this.#workersArr.map(w => w.getInterestInTopic(this.id))
+		this.#avgInterestRate = interests.reduce((acc, c) => acc + c, 0) / workersCnt
+		this.#interestsDeviation = Math.sqrt(interests.reduce((acc, c) => acc + Math.pow(c - this.#avgInterestRate, 2), 0) / workersCnt)
+
+		this.#averageExpertise = this.#workersArr.reduce((acc, worker) => acc + worker.getProficiencyInTopic(this.id), 0.0) / workersCnt
 
 		// Set color for topic depending on how engaing it is for contrbutors
-		let intens = Math.round(255 * this.avgInterestRate)
+		let intens = Math.round(255 * this.#avgInterestRate)
 		this.t.setColor('rgba(100,' + intens + ',0, 1)')
 
-		this.lastTickContribution = 0
+		this.#lastTickContribution = 0
 	}
 	updateOpts(opts) {
 		$.extend(this, opts)
+	}
+}
+
+class AggregatedWorkersBehavior extends AgentBehavior {
+	/**
+	 * @param {Array.<AgentBehavior>} agentsToAggregate 
+	 */
+	constructor(agentsToAggregate) {
+		super("aggregated")
+		this.agentsToAggregate = agentsToAggregate
+		this.v = 0
+
+		/** @type {Object.<string, Metric>} */
+		const aggregatedMetricsByKey = {}
+
+		/** @type {Object.<string, Array.<Metric>>} */
+		const agentMetricsByKey = {}
+		this.agentsToAggregate.forEach(agent => {
+			agent.getMetrics().forEach((agentMetric, metricIdx) => {
+				const key = agentMetric.getKey()
+
+				if (agentMetricsByKey[key] == undefined) {
+					agentMetricsByKey[key] = []
+				}
+				agentMetricsByKey[key].push(agentMetric)
+
+				if (aggregatedMetricsByKey[key] === undefined) {
+					/** @type {function ():number} */
+					let valueSupplier = undefined
+					if (key === 'total_motivation') {
+						valueSupplier = () => {
+							const agentMetricAccessors = agentMetricsByKey[key]
+							return agentMetricAccessors
+								.map(m => m.getValue())
+								.reduce((mv1, mv2) => mv1 + mv2) / agentMetricAccessors.length
+						}
+					} else {
+						valueSupplier = () => {
+							return agentMetricsByKey[key]
+								.map(m => m.getValue())
+								.reduce((mv1, mv2) => Math.max(mv1, mv2))
+						}
+					}
+					aggregatedMetricsByKey[key] = new Metric(key, agentMetric.getTitle(), valueSupplier)
+						.withMax(1.0)
+				}
+			})
+		})
+
+
+		/** @type {Array.<Metric>} */
+		this.aggregatedMetrics = Object.values(aggregatedMetricsByKey)
+
+	}
+
+	getMetrics() {
+		return this.aggregatedMetrics
+	}
+
+	action(tickNo) {
+		this.v = Math.min(100, this.v + 1)
 	}
 }
 
@@ -476,12 +553,12 @@ class DynamicCollaborationModel extends Model {
 		}
 		this.#topics.forEach(t => t.setWorkers(this.#workers))
 		this.#manager = new ManagerBehavior(this.#workers, this.#topics)
-		this.aggregatedState = new AggregatedStateBehavior(this.#workers)
+		//this.aggregatedState = new AggregatedWorkersBehavior(this.#workers)
 		this.layout = layout
 		this.allAgentsById = {}
 		this.#workers
 			.concat(this.#topics)
-			.concat([this.aggregatedState])
+			//.concat([this.aggregatedState])
 			.concat([this.#manager])
 			.forEach(a => {
 				this.allAgentsById[a.id] = a

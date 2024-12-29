@@ -662,6 +662,7 @@ $(function () {
 	)
 	preset.onSelectionChanged(() => {
 		$('#input-retention').val(preset.getSelectedParameters().managerOptions.retentionTicks)
+		$('#input-syncReassignNumber').val(preset.getSelectedParameters().managerOptions.switchingWorkersNumber)
 		updateModel()
 	})
 
@@ -669,6 +670,7 @@ $(function () {
 		let selectedModelPrameters = preset.getSelectedParameters()
 		selectedModelPrameters.workersCount = parseInt($('#input-maxWorkers').val())
 		selectedModelPrameters.managerOptions.retentionTicks = parseInt($('#input-retention').val())
+		selectedModelPrameters.managerOptions.switchingWorkersNumber = parseInt($('#input-syncReassignNumber').val())
 
 		let model = new DynamicCollaborationModel(selectedModelPrameters.title, selectedModelPrameters.workersCount, selectedModelPrameters.topicsCount).
 			description(selectedModelPrameters.description).//

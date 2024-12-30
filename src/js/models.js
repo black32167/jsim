@@ -1,3 +1,4 @@
+import { arg } from 'mathjs'
 import { AgentBehavior } from './agent.js'
 import { Metric } from './metrics.js'
 /**
@@ -6,6 +7,8 @@ import { Metric } from './metrics.js'
  */
 
 export class Model {
+	#allAgentsById = {}
+
 	constructor(title) {
 		this.title = title
 		this.descriptionText = "TODO: Model description"
@@ -32,6 +35,30 @@ export class Model {
 		throw "draw not implemented"
 	}
 
+	/** @type {Array.<AgentBehavior>} */
+	setAgents(agents) {
+		agents.forEach(a => {
+			this.#allAgentsById[a.id] = a
+		})
+	}
+
+
+	/**
+	 * @param {string} agentId 
+	 * @returns {AgentBehavior}
+	 */
+	getAgent(agentId) {
+		return this.#allAgentsById[agentId]
+	}
+
+	/**
+	 * @returns {Array.<AgentBehavior>}
+	 */
+	getAllAgents() {
+		return Object.values(this.#allAgentsById)
+	}
+
+
 	prepare(c) {
 	}
 
@@ -44,28 +71,11 @@ export class Model {
 
 	/**
 	 * @param {string} agentId 
-	 * @returns {AgentBehavior}
-	 */
-	getAgent(agentId) {
-		throw "getAgent not implemented"
-	}
-
-	/**
-	 * @param {string} agentId 
 	 * @returns {boolean}
 	 */
 	hasAgent(agentId) {
 		return this.getAgent(agentId) !== undefined
 	}
-	// {id, agent}
-
-	/**
-	 * @returns {Array.<AgentBehavior>}
-	 */
-	getAllAgents() {
-		throw "getAllAgents not implemented"
-	}
-
 
 	getMetrics(agentId) {
 		return this.getAgent(agentId).getMetrics()

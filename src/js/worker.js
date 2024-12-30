@@ -140,9 +140,8 @@ class WorkerBehavior extends AgentBehavior {
 	 * @param {number} idx 
 	 * @param {Array.<TopicBehavior>} topics 
 	 */
-	constructor(idx, topics) {
+	constructor(topics) {
 		super()
-		//this.idx = idx
 		this.maxCompulsoryTopics = 1
 		this.maxOptionalTopics = 0
 		this.retentionTicks = 20 // How many ticks worker is assigned to the particular project
@@ -164,21 +163,22 @@ class WorkerBehavior extends AgentBehavior {
 		})
 
 		// Build metric accessors
-		/** @type {Array.<Metric>} */
-		this.metrics = [
+		const metrics = [
 			new Metric("total_motivation", "Total motivation", () => this.motivation)
 				.withMax(1.0)
 		]
 		Object.entries(this.#topicParametersByTopicId).forEach(([topicId, t]) => {
-			this.metrics.push(
+			metrics.push(
 				new Metric(`topic_skill_${topicId}`, `Skill in topic #${topicId}`, () => Math.round10(t.proficiency))
 					.withMax(1.0)
 			)
-			this.metrics.push(
+			metrics.push(
 				new Metric(`topic_fatigue_${topicId}`, `Fatigue in topic #${topicId}`, () => Math.round10(t.fatigue))
 					.withMax(1.0)
 			)
 		})
+
+		super.metrics = metrics
 
 		this.w = new AgentShape()
 		this.w.r = 8
@@ -211,10 +211,6 @@ class WorkerBehavior extends AgentBehavior {
 			meta.push(["Topic #" + topicId + " interest", Math.round10(topicParameters.interest)])
 		})
 		return meta
-	}
-
-	getMetrics() {
-		return this.metrics
 	}
 
 	cleanState() {
@@ -275,15 +271,15 @@ class WorkerBehavior extends AgentBehavior {
 		Object.values(this.#topicParametersByTopicId).forEach(t => {
 			// Fatigue growth with time, but interest in this particular topic and also having a side interest
 			// help to slow down that growth.
-			t.fatigue = (this.sigmoid(t.contributionTime / (t.interest * 100)) - 0.5) * 2
+			t.fatigue = (this.#sigmoid(t.contributionTime / (t.interest * 100)) - 0.5) * 2
 
-			t.proficiency = (this.sigmoid(t.interest * t.contributionTime / 3) - 0.5) * 2
+			t.proficiency = (this.#sigmoid(t.interest * t.contributionTime / 3) - 0.5) * 2
 		})
 
 		this.shouldChangePriority = false
 	}
 
-	sigmoid(x) {
+	#sigmoid(x) {
 		let ex = Math.pow(2.718, x)
 		return ex / (ex + 1)
 	}
@@ -421,10 +417,6 @@ class TopicBehavior extends AgentBehavior {
 			["Interest deviation", Math.round10(this.#interestsDeviation)]]
 	}
 
-	getMetrics() {
-		return this.metrics
-	}
-
 	cleanState() {
 		this.#devSpeed = 0
 		this.#contributingWorkerIds = []
@@ -546,7 +538,7 @@ class DynamicCollaborationModel extends Model {
 		}
 
 		for (let i = 0; i < wN; i++) {
-			let a = new WorkerBehavior(i, this.#topics);
+			let a = new WorkerBehavior(this.#topics);
 
 			this.#workers.push(a)
 			layout.addWorker(a)
@@ -555,14 +547,12 @@ class DynamicCollaborationModel extends Model {
 		this.#manager = new ManagerBehavior(this.#workers, this.#topics)
 		//this.aggregatedState = new AggregatedWorkersBehavior(this.#workers)
 		this.layout = layout
-		this.allAgentsById = {}
-		this.#workers
+
+		this.setAgents(this.#workers
 			.concat(this.#topics)
 			//.concat([this.aggregatedState])
-			.concat([this.#manager])
-			.forEach(a => {
-				this.allAgentsById[a.id] = a
-			})
+			.concat([this.#manager]))
+
 	}
 
 	draw(c) {
@@ -570,20 +560,6 @@ class DynamicCollaborationModel extends Model {
 		this.layout.draw(c)
 	}
 
-	/**
-	 * @param {string} agentId 
-	 * @returns {AgentBehavior}
-	 */
-	getAgent(agentId) {
-		return this.allAgentsById[agentId]
-	}
-
-	/**
-	 * @returns {Array.<AgentBehavior>}
-	 */
-	getAllAgents() {
-		return Object.values(this.allAgentsById)
-	}
 
 	updateTopicOpts(opts) {
 		this.#topics.forEach(t => t.updateOpts(opts))

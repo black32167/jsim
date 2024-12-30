@@ -46,10 +46,30 @@ var nextId = 0
 
 
 export class AgentBehavior {
+
+	/** @type {Array.<Metric>} */
+	#metrics = []
+
 	constructor(id) {
 		/** @type {string} */
 		this.id = id || `${nextId++}`
 	}
+
+	/**
+	 * @param {Array.<Metric>} metrics
+	 */
+	set metrics(metrics) {
+		this.#metrics = metrics
+	}
+
+	/** 
+	 * @return {Array.<Metric>} 
+	 */
+	getMetrics() {
+		return this.#metrics
+	}
+
+	// TODO: rename to createAgentShape and save/keep outside?
 	getAgentShape() {
 		return undefined
 	}
@@ -64,13 +84,6 @@ export class AgentBehavior {
 	action(tickNo) {
 	}
 	postAction(tickNo) {
-	}
-
-	/** 
-	 * @return {Array.<Metric>} 
-	 */
-	getMetrics() {
-		return []
 	}
 }
 

@@ -5,6 +5,7 @@ import { Engine } from './engine.js'
 import { PageLayoutManager } from './page-layout'
 import $ from 'jquery'
 import 'jcanvas'
+import { Metric } from './metrics.js'
 
 class BlackholeModel extends Model {
 	constructor(title) {
@@ -80,15 +81,22 @@ class BlackholeModel extends Model {
 }
 
 class BlackholeAgent extends AgentBehavior {
+	released = 0
+	detained = 0
+	mass = 15
+
 	constructor(id) {
 		super()
 		this.id = id
 		this.shape = new AgentShape()
 		this.shape.color = 'black'
 		this.particlesNo++
-		this.released = 0
-		this.detained = 0
-		this.mass = 15
+
+		this.metrics = [
+			new Metric('mass', 'Mass', () => this.mass),
+			new Metric('released', 'Particles released', () => this.released),
+			new Metric('detained', 'Particles unreleased', () => this.detained),
+		]
 	}
 	getMass() {
 		return this.mass
@@ -103,14 +111,6 @@ class BlackholeAgent extends AgentBehavior {
 	}
 	describe() {
 		return []
-	}
-	stateHeaders() {
-		return ['Mass', 'Particles released', 'Particles unreleased']
-	}
-	state() {
-		return [this.mass,
-		this.released,
-		this.detained]
 	}
 }
 

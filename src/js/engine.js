@@ -75,9 +75,10 @@ export class Engine {
 		const agentId = this.model.getAgentIdAt(x, y)
 		if (agentId != undefined) {
 			this.showAgentInfo(agentId)
-		} else {
-			this.showAgentInfo("aggregated")
 		}
+		//  else {
+		// 	this.showAgentInfo("aggregated")
+		// }
 	}
 
 	showAgentInfo(agentId) {

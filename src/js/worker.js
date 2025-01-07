@@ -98,7 +98,7 @@ class ManagerBehavior extends AgentBehavior {
 		$.extend(this, opts)
 	}
 
-	//TODO: just swap two?
+	//TODO: just shift?
 	action(tick) {
 		if (tick == 0) {
 			this.#workersQueue.forEach((w, i) => {
@@ -106,15 +106,29 @@ class ManagerBehavior extends AgentBehavior {
 			})
 		} else {
 			this.#currentRetentionTicks++
+
 			if (this.#currentRetentionTicks > this.retentionTicks) {
 				this.#currentRetentionTicks = 0
+				/** @type {Array.<TopicBehavior>} */
+				const seenProjectIds = []
+
+				/** @type {Array.<WorkerBehavior>} */
+				const switchingWorkers = []
+
+				// Eligible workers abjure all the projects
 				for (let i = 0; i < this.switchingWorkersNumber; i++) {
-					const workerToReassign = this.#workersQueue.shift()
-					console.log(`Choosing new projects for worker ${workerToReassign.id}`)
+					const worker = this.#workersQueue.shift()
+					worker.abjureAllProjects()
+					switchingWorkers.push(worker)
+					this.#workersQueue.push(worker)
+				}
 
-					workerToReassign.reassignProjects()
-
-					this.#workersQueue.push(workerToReassign)
+				// Allowing workers to select new projects
+				for (const worker of switchingWorkers) {
+					worker.reassignCompulsoryProjects()
+				}
+				for (const worker of switchingWorkers) {
+					worker.reassignOptionalProjects()
 				}
 			}
 		}
@@ -187,12 +201,26 @@ class WorkerBehavior extends AgentBehavior {
 		this.workForce = 1
 	}
 
-	reassignProjects() {
+
+	/**
+	 * @returns {Array.<TopicBehavior>}
+	 */
+	get projects() {
+		return this.#topics
+	}
+
+	abjureAllProjects() {
+		this.#topics.forEach(t => t.abjureWorker(this.id))
+	}
+
+	// TODO: move to ManagerBehavior?
+	reassignCompulsoryProjects() {
 		// Reassign compulsory projects
 		let selectedCompulsory = this.#selectTopic(this.maxCompulsoryTopics, (t1, t2) => this.#compareByRequiredWorkersFirstDesc(t1, t2))
-		this.#topics.forEach(t => t.abjureWorker(this.id))
 		selectedCompulsory.forEach(t => t.assignWorker(this.id))
+	}
 
+	reassignOptionalProjects() {
 		// Reassign optional projects
 		let selectedOptional = this.#selectTopic(this.maxOptionalTopics, (t1, t2) => this.#compareByFatigueAsc(t1, t2))
 		selectedOptional.forEach(t => t.assignWorker(this.id))
@@ -374,10 +402,17 @@ class TopicBehavior extends AgentBehavior {
 			new Metric("average_expertise", "Average expertise", () => this.#averageExpertise)
 		]
 	}
+
+	get workers() {
+		return this.#workersArr
+	}
+
 	setWorkers(workersArr) {
 		this.#workersArr = [...workersArr]
 		return this
 	}
+
+
 
 	contributorsCount() {
 		return this.#contributingWorkerIds.length
@@ -387,6 +422,10 @@ class TopicBehavior extends AgentBehavior {
 		return this.#contributingWorkerIds.includes(workerId)
 	}
 
+	/**
+	 * 
+	 * @param {string} workerId 
+	 */
 	assignWorker(workerId) {
 		if (this.isContributing(workerId)) {
 			throw "Already contributing!"
@@ -394,6 +433,9 @@ class TopicBehavior extends AgentBehavior {
 		this.#contributingWorkerIds.push(workerId)
 	}
 
+	/**
+	 * @param {string} workerId 
+	 */
 	abjureWorker(workerId) {
 		var index = this.#contributingWorkerIds.indexOf(workerId);
 		if (index !== -1) {
@@ -644,9 +686,12 @@ $(function () {
 
 	function updateModel() {
 		let selectedModelPrameters = preset.getSelectedParameters()
+		selectedModelPrameters.topicsCount = parseInt($('#input-maxProjects').val())
 		selectedModelPrameters.workersCount = parseInt($('#input-maxWorkers').val())
+		selectedModelPrameters.workerOptions.maxOptionalTopics = parseInt($('#input-maxOptionalProjects').val())
 		selectedModelPrameters.managerOptions.retentionTicks = parseInt($('#input-retention').val())
 		selectedModelPrameters.managerOptions.switchingWorkersNumber = parseInt($('#input-syncReassignNumber').val())
+
 
 		let model = new DynamicCollaborationModel(selectedModelPrameters.title, selectedModelPrameters.workersCount, selectedModelPrameters.topicsCount).
 			description(selectedModelPrameters.description).//

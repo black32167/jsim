@@ -109,8 +109,6 @@ class ManagerBehavior extends AgentBehavior {
 
 			if (this.#currentRetentionTicks > this.retentionTicks) {
 				this.#currentRetentionTicks = 0
-				/** @type {Array.<TopicBehavior>} */
-				const seenProjectIds = []
 
 				/** @type {Array.<WorkerBehavior>} */
 				const switchingWorkers = []

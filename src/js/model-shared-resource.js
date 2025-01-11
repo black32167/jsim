@@ -14,7 +14,7 @@ export class ResourceBehavior extends AgentBehavior {
 	constructor() {
 		super()
 		this.r = new AgentShape()
-		this.maxCapacity = 10
+		this.maxCapacity = 100
 		this.acceptResources = false
 		this.metrics = [
 			new Metric('capacity', 'Capacity', () => Math.round10(this.#reserve))

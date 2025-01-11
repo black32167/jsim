@@ -1,6 +1,6 @@
 import { AgentBehavior, AgentShape } from './agent.js'
-import { CircularLayout } from './model-layout.js'
-import { PageLayoutManager } from './page-layout'
+import { CircularLayout } from './agents-layout.js'
+import { PageLayoutManager } from './page-layout.js'
 import { Model } from './models.js'
 import { Engine } from './engine.js'
 import $ from 'jquery'

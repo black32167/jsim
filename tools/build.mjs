@@ -23,9 +23,9 @@ copySource(`${sourceRootDir}/img`, buildDir)
 console.log(`target=${target}`)
 await esbuild.build({
     entryPoints: [
-        `${jsSourceDir}/blackhole.js`,
-        `${jsSourceDir}/worker.js`,
-        `${jsSourceDir}/person.js`,
+        `${jsSourceDir}/model-blackhole.js`,
+        `${jsSourceDir}/model-motivation.js`,
+        `${jsSourceDir}/model-shared-resource.js`,
         `${jsSourceDir}/engine.js`,
         `${jsSourceDir}/particles/particles-main.js`,
     ],

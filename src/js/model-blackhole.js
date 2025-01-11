@@ -2,7 +2,7 @@
 import { AgentBehavior, AgentShape } from './agent.js'
 import { Model } from './models.js'
 import { Engine } from './engine.js'
-import { PageLayoutManager } from './page-layout'
+import { PageLayoutManager } from './page-layout.js'
 import $ from 'jquery'
 import 'jcanvas'
 import { Metric } from './metrics.js'
